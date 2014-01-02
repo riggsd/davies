@@ -52,9 +52,8 @@ class CompassSurveyParser(object):
 		if key in CompassSurveyParser._FLOAT_KEYS:
 			try:
 				return float(val)
-			except TypeError, e:
+			except TypeError as e:
 				log.warn("Unable to coerce to float %s=%s (%s)", key, val, type(val))
-				raise e
 		return val
 
 	def parse(self):
@@ -87,7 +86,7 @@ class CompassSurveyParser(object):
 		for shot_line in shot_lines:
 			shot_vals = shot_line.split(None, len(shot_header))[:len(shot_header)]
 			shot = dict(zip(shot_header, shot_vals))
-			shot = {k:self._coerce(k,v) for (k,v) in shot.iteritems()}
+			shot = {k:self._coerce(k,v) for (k,v) in shot.items()}
 			survey.add_shot(shot)
 
 		log.debug("Survey: name=%s shots=%d length=%0.1f date=%s team=%s\n%s", name, len(shots), survey.length, date, team, '\n'.join([str(shot) for shot in survey.shots]))

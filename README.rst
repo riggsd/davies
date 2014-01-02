@@ -62,11 +62,15 @@ Botswana, which features a remote cave housing a large python-shaped rock which 
 Installation
 ------------
 
-Releases are available for installation from the Python Package Index, see `installation instructions <https://wiki.python.org/moin/CheeseShopTutorial#Installing_Distributions>`_.
+This software requires Python 2.7
+
+Releases are available for installation from the Python Package Index, see
+`installation instructions <https://wiki.python.org/moin/CheeseShopTutorial#Installing_Distributions>`_ or simply run
+the following command on Mac OS X or most Linux distributions.
 
 ``pip install tsodilo``
 
-Or, if you've downloaded a source distribution or checked out from the git repository, install locally with:
+If you've downloaded a source distribution or checked out from the git repository, install locally with:
 
 ``python setup.py install``
 
