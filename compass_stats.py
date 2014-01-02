@@ -2,7 +2,7 @@
 
 import sys
 
-from tsodilo import compass
+from davies import compass
 
 
 def compass_stats(datfiles):
