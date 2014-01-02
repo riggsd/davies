@@ -2,10 +2,14 @@
 Tsodillo: Python library for cave survey data
 """
 
+import os.path
+import logging
 from datetime import datetime
 
-import logging
 log = logging.getLogger(__name__)
+
+
+# Compass OO Model
 
 
 class Survey(object):
@@ -20,18 +24,90 @@ class Survey(object):
 		self.corrections = corrections
 		self.cave_name = cave_name
 		self.shot_header = shot_header
-		self.shots = shots
+		self.shots = shots if shots else []
 
 	def add_shot(self, shot):
-		if not self.shots:
-			self.shots = []
 		self.shots.append(shot)
 
 	@property
 	def length(self):
-		if not self.shots:
-			return 0
 		return sum([shot['LENGTH'] for shot in self.shots])
+
+	def __len__(self):
+		return len(self.shots)
+
+	def __iter__(self):
+		for shot in self.shots:
+			yield shot
+
+	def __contains__(self, item):
+		for shot in self.shots:
+			if item in (shot.get('FROM', None), shot.get('TO', None)):
+				return True
+		return False
+
+
+class DatFile(object):
+
+	def __init__(self, name=None):
+		self.name = name
+		self.surveys = []
+
+	def add_survey(self, survey):
+		self.surveys.append(survey)
+
+	def __len__(self):
+		return len(self.surveys)
+
+	def __iter__(self):
+		for survey in self.surveys:
+			yield survey
+
+	def __contains__(self, item):
+		for survey in self.surveys:
+			if item == survey.name:
+				return True
+		return False
+
+
+class UTMLocation(object):
+
+	def __init__(self, easting, northing, elevation, zone=None, convergence=None, datum=None):
+		self.easting = easting
+		self.northing = northing
+		self.elevation = elevation
+		self.zone = int(zone) if zone is not None else None
+		self.convergence = convergence
+		self.datum = datum
+
+	def __str__(self):
+		return "<%s UTM Zone %s %0.1fE %0.1fN %0.1f>" % (self.datum, self.zone, self.easting, self.northing, self.elevation)
+
+
+class Project(object):
+
+	def __init__(self, name=None, base_location=None, file_params=None):
+		self.name = name
+		self.base_location = base_location
+		self.file_params = file_params
+		self.linked_files = []
+
+	def add_linked_file(self, datfile):
+		self.linked_files.append(datfile)
+
+	def __len__(self):
+		return len(self.linked_files)
+
+	def __iter__(self):
+		for linked_file in self.linked_files:
+			yield linked_file
+
+
+# File Parsing Utilities
+
+
+def name_from_filename(fname):
+	return os.path.splitext(os.path.basename(fname))[0].replace('_', ' ')
 
 
 class ParseException(Exception):
@@ -44,16 +120,22 @@ class CompassSurveyParser(object):
 		self.survey_str = survey_str
 
 	_FLOAT_KEYS = ['LENGTH', 'BEARING', 'AZM2', 'INC', 'INC2', 'LEFT', 'RIGHT', 'UP', 'DOWN']
+	_INF_KEYS = ['LEFT', 'RIGHT', 'UP', 'DOWN']
 
 	@staticmethod
 	def _coerce(key, val):
-		if val == '-999.00':
+		if val == '-999.00':  # no data
 			return None
+
+		if key in CompassSurveyParser._INF_KEYS and val == '-9.90':  # passage
+			return float('inf')
+
 		if key in CompassSurveyParser._FLOAT_KEYS:
 			try:
 				return float(val)
 			except TypeError as e:
 				log.warn("Unable to coerce to float %s=%s (%s)", key, val, type(val))
+
 		return val
 
 	def parse(self):
@@ -96,12 +178,12 @@ class CompassSurveyParser(object):
 
 class CompassDatParser(object):
 
-	def __init__(self, datfile):
-		self.datfilename = datfile
+	def __init__(self, datfilename):
+		self.datfilename = datfilename
 
 	def parse(self):
 		log.debug("Parsing Compass .DAT file %s ...", self.datfilename)
-		surveys = []
+		datobj = DatFile(name_from_filename(self.datfilename))
 
 		with open(self.datfilename, 'rb') as datfile:
 			full_contents = datfile.read()
@@ -112,9 +194,87 @@ class CompassDatParser(object):
 
 			log.debug("Parsed %d raw surveys from Compass .DAT file %s.", len(survey_strs), self.datfilename)
 			for survey_str in survey_strs:
+				if not survey_str:
+					continue
 				survey = CompassSurveyParser(survey_str).parse()
-				if survey:
-					surveys.append(survey)
+				datobj.add_survey(survey)
 
-		return surveys
+		return datobj
 
+
+class CompassProjectParser(object):
+
+	def __init__(self, projectfile):
+		self.makfilename = projectfile
+
+	def parse(self):
+		log.debug("Parsing Compass .MAK file %s ...", self.makfilename)
+
+		base_location = None
+		linked_files = []
+		file_params = set()
+
+		def parse_linked_file(value):
+			log.debug("Parsing linked file:  %s", value)
+			value = value.rstrip(';')
+			toks = value.split(',', 1)
+			if len(toks) == 1:
+				return toks[0]
+			else:
+				return toks[0]  # TODO: implement link stations and fixed stations
+
+		with open(self.makfilename, 'rb') as makfile:
+			prev = None
+
+			for line in makfile:
+				line = line.strip()
+
+				if not line:
+					continue
+
+				if prev:
+					if line.endswith(';'):
+						linked_files.append( parse_linked_file(prev + line.rstrip(';')) )
+						prev = None
+					else:
+						prev += value
+					continue
+
+				header, value = line[0], line[1:]
+
+				if header == '/':
+					pass  # comment
+
+				elif header == '@':
+					value = value.rstrip(';')
+					base_location = UTMLocation( *(float(v) for v in value.split(',')) )
+
+				elif header == '&':
+					value = value.rstrip(';')
+					base_location.datum = value
+
+				elif header == '%':
+					value = value.rstrip(';')
+					base_location.convergence = float(value)
+
+				elif header == '!':
+					value = value.rstrip(';')
+					file_params = set(value.upper())
+
+				elif header == '#':
+					if value.endswith(';'):
+						linked_files.append( parse_linked_file(value) )
+						prev = None
+					else:
+						prev = value
+
+			log.debug("Project:  base_loc=%s  params=%s  linked_files=%s", base_location, file_params, linked_files)
+
+			project = Project(name_from_filename(self.makfilename), base_location, file_params)
+
+			for linked_file in linked_files:
+				linked_file_path = os.path.join(os.path.dirname(self.makfilename), os.path.normpath(linked_file.replace('\\', '/')))
+				datfile = CompassDatParser(linked_file_path).parse()
+				project.add_linked_file(datfile)
+
+			return project

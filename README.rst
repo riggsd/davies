@@ -8,7 +8,7 @@ It is currently in a very, very early phase of development, and should be consid
 
 Current support includes:
 
- - Parsing of `Compass <http://www.fountainware.com/compass/>`_ source files
+ - Parsing of `Compass <http://www.fountainware.com/compass/>`_ Project (.MAK) and Data (.DAT) source files
 
  - That's it!
 
