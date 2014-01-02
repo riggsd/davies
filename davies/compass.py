@@ -1,5 +1,5 @@
 """
-Tsodillo: Python library for cave survey data
+Davies: Python library for cave survey data
 """
 
 import os.path

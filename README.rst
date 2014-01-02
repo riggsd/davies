@@ -1,7 +1,7 @@
-Tsodilo
+Davies
 -------
 
-Tsodilo is a pure-Python package for manipulating cave survey data.
+Davies is a Python package for manipulating cave survey data.
 
 It is currently in a very, very early phase of development, and should be considered a "proof of concept" implementation.
 
@@ -15,7 +15,7 @@ Current support includes:
 
 Example usage::
 
-  from tsodilo import compass
+  from davies import compass
 
   # Parse a .DAT file
   parser = compass.CompassDatParser('mycave.dat')
@@ -41,7 +41,7 @@ Example usage::
 
 Or a more useful example, which shows who has surveyed the most footage in your project::
 
-    from tsodilo import compass
+    from davies import compass
 
     cavers = {}
 
@@ -54,10 +54,6 @@ Or a more useful example, which shows who has surveyed the most footage in your 
         print "%s:\t%0.1f" % (name, cavers[name])
 
 
-The name "Tsodilo" is a nod to the `Tsodilo Hills UNESCO World Heritage Site <http://whc.unesco.org/en/list/1021>`_ in
-Botswana, which features a remote cave housing a large python-shaped rock which has been visited by humans for more than
-70,000 years.
-
 
 Installation
 ------------
@@ -68,14 +64,24 @@ Releases are available for installation from the Python Package Index, see
 `installation instructions <https://wiki.python.org/moin/CheeseShopTutorial#Installing_Distributions>`_ or simply run
 the following command on Mac OS X or most Linux distributions.
 
-``pip install tsodilo``
+``pip install davies``
 
 If you've downloaded a source distribution or checked out from the git repository, install locally with:
 
 ``python setup.py install``
 
 
+Name
+----
+
+The name "Davies" is a tribute to `William E. Davies <http://www.aegweb.org/docs/about/william_davies_memorial.pdf>`_,
+who pioneered the systematic cave survey of West Virginia and authored *Caverns of West Virginia* in 1949. Bill Davies
+later did the statewide cave survey for the state of Maryland, served the roles of President and Vice-President of the
+National Speleological Society, and published the definitive US-wide karst map, *Engineering Aspects of Karst*. Davies
+still serves as an inspiration today to the cave mappers of West Virginia, of the United States, and the World over.
+
+
 License
 -------
 
-Tsodilo is Open Source software licensed under the MIT License, and is copyright (C) Myotisoft LLC.
+Davies is Open Source software licensed under the MIT License, and is copyright (C) Myotisoft LLC.
