@@ -10,11 +10,14 @@ def compass_stats(datfiles):
 
 	for datfile in datfiles:
 		for survey in compass.CompassDatParser(datfile).parse():
-			for name in survey.team:
-				stats[name] = stats.get(name, 0.0) + survey.length
+			for shot in survey.shots:
+				if shot['INC'] > 30.0:
+					for name in survey.team:
+						stats[name] = stats.get(name, 0) + 1
 
+	print 'NAME\tHIGH ANGLE SHOTS'
 	for name in sorted(stats, key=stats.get, reverse=True):
-		print "%s:\t%0.1f" % (name, stats[name])
+		print "%s:\t%d" % (name, stats[name])
 
 
 if __name__ == '__main__':
