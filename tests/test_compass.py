@@ -21,7 +21,7 @@ class CompassParsingTestCase(unittest.TestCase):
 
 		project = makparser.parse()
 		self.assertEqual(project.name, 'FULFORDS')
-		self.assertEquals(len(project), 2)
+		self.assertEqual(len(project), 2)
 
 		cave_survey_dat = project.linked_files[0]
 		self.assertEqual(cave_survey_dat.name, 'FULFORD')

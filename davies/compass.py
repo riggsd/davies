@@ -144,6 +144,16 @@ class CompassSurveyParser(object):
 
 		return val
 
+	@staticmethod
+	def _parse_date(datestr):
+		datestr = datestr.strip()
+		for fmt in ['%m %d %Y', '%m %d %y']:
+			try:
+				return datetime.strptime(datestr, fmt).date()
+			except ValueError:
+				pass
+		raise ParseException("Unable to parse SURVEY DATE: %s", datestr)
+
 	def parse(self):
 		if not self.survey_str:
 			return None
@@ -151,10 +161,19 @@ class CompassSurveyParser(object):
 		if len(lines) < 10:
 			raise ParseException("Expected at least 10 lines in a Compass Survey, only found %d!\nlines=%s" % (len(lines), lines))
 
-		cave_name = lines.pop(0).strip()
-		name = lines.pop(0).split('SURVEY NAME:', 1)[1].strip()
-		date, comment = lines.pop(0).split('SURVEY DATE:', 1)[1].split('COMMENT:')
-		date = datetime.strptime(date.strip(), '%m %d %Y').date()
+		# undelimited Cave Name may be empty string and "skipped"
+		first_line = lines.pop(0).strip()
+		if first_line.startswith('SURVEY NAME:'):
+			cave_name = ''
+			name = first_line.strip('SURVEY NAME:').strip()
+		else:
+			cave_name = first_line
+			name = lines.pop(0).split('SURVEY NAME:', 1)[1].strip()
+
+		# Date and Comment on one line, Comment may be missing
+		date_comment_toks = lines.pop(0).split('SURVEY DATE:', 1)[1].split('COMMENT:')
+		date = CompassSurveyParser._parse_date(date_comment_toks[0])
+		comment = date_comment_toks[1].strip() if len(date_comment_toks) > 1 else ''
 
 		lines.pop(0)  # SURVEY TEAM:\n
 		team = [member.strip() for member in lines.pop(0).split(',')]
