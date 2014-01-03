@@ -10,7 +10,7 @@ from davies import compass
 # - Two imported Data Files
 #   - One with 25 cave surveys, four fixed stations
 #   - One with 4 surface surveys
-TESTFILE = 'test/data/Fulfords.mak'
+TESTFILE = 'tests/data/Fulfords.mak'
 
 
 class CompassParsingTestCase(unittest.TestCase):
