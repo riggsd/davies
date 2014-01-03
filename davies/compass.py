@@ -307,23 +307,19 @@ class CompassProjectParser(object):
 
 
 class Command(object):
+	cmd = None
+
 	def __init__(self, x, y, z, name, l, r, u, d, ele):
-		self.x, self.y, self.z = z, y, z
+		self.x, self.y, self.z = x, y, z
 		self.name = name
 		self.l, self.r, self.u, self.d = l, r, u, d
 		self.ele = ele
 
 class MoveCommand(Command):
-	pass
+	cmd = 'M'
 
 class DrawCommand(Command):
-	pass
-
-class XCommand(Command):
-	def __init__(self, x2, x1, mystery1, mystery2, z2, z1):
-		self.x2, self.x1 = x2, x1
-		self.mystery1, self.mystery2 = mystery1, mystery2
-		self.z2, self.z1 = z2, z1
+	cmd = 'D'
 
 
 class Segment(object):
@@ -332,7 +328,13 @@ class Segment(object):
 		self.name = name
 		self.date = date
 		self.comment = comment
+		self.xmin = self.xmax = self.ymin = self.ymax = self.zmin = self.zmax = None
 		self.commands = []
+
+	def set_bounds(self, xmin, xmax, ymin, ymax, zmin, zmax):
+		self.xmin, self.xmax = xmin, xmax
+		self.ymin, self.ymax = ymin, ymax
+		self.zmin, self.zmax = zmin, zmax
 
 	def add_command(self, command):
 		self.commands.append(command)
@@ -349,10 +351,22 @@ class Plot(object):
 
 	def __init__(self, name):
 		self.name = name
+		self.utm_zone = None
+		self.datum = None
+		self.xmin = self.xmax = self.ymin = self.ymax = self.zmin = self.zmax = None
 		self.segments = []
+		self.fixed_points = {}  # name -> (x,y,z)
+
+	def set_bounds(self, xmin, xmax, ymin, ymax, zmin, zmax):
+		self.xmin, self.xmax = xmin, xmax
+		self.ymin, self.ymax = ymin, ymax
+		self.zmin, self.zmax = zmin, zmax
 
 	def add_segment(self, segment):
 		self.segments.append(segment)
+
+	def add_fixed_point(self, name, coordinate):
+		self.fixed_points[name] = coordinate
 
 	def __len__(self):
 		return len(self.segments)
@@ -385,9 +399,6 @@ class CompassPltParser(object):
 		with open(self.pltfilename, 'rb') as pltfile:
 			first_line = pltfile.readline()
 			c, val = first_line[:1], first_line[1:]
-			if c != 'Z':
-				raise ParseException("Expected PLT file first line to be 'Z' descriptor, found: '%s'" % c)
-			plt.descriptor = val.split()  # TODO: is this bounds?? No clue!
 
 			segment = None
 
@@ -397,8 +408,19 @@ class CompassPltParser(object):
 
 				c, val = line[:1], line[1:]
 
+				if c == 'Z':
+					plt.set_bounds(*(float(v) for v in val.split()))
+
 				if c == 'S':
-					plt.name = val.strip()
+					# this is probably more appropriately called a "segment"
+					if not plt.name:
+						plt.name = val.strip()
+
+				elif c == 'G':
+					plt.utm_zone = int(val)
+
+				elif c == 'O':
+					plt.datum = val
 
 				elif c == 'N':
 					name, _, m, d, y, comment = val.split(None, 5)
@@ -417,10 +439,20 @@ class CompassPltParser(object):
 					segment.add_command(cmd)
 
 				elif c == 'X':
-					#cmd = XCommand(*[float(v) for v in val.split()])  # ??
-					#segment.add_command(cmd)
+					segment.set_bounds(*(float(v) for v in val.split()))
 
+					# An X-bounds command signifies end of segment
 					plt.add_segment(segment)
 					segment = None
+
+				elif c == 'P':
+					name, x, y, z = val.split()
+					plt.add_fixed_point(name, (float(x), float(y), float(z)))
+
+				elif c == '\x1A':
+					continue  # "soft EOF" ascii SUB ^Z
+
+				else:
+					raise ParseException("Unknown PLT control code '%s': %s" % (c, val))
 
 		return plt
