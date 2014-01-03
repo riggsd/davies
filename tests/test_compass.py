@@ -10,7 +10,7 @@ from davies import compass
 # - Two imported Data Files
 #   - One with 25 cave surveys, four fixed stations
 #   - One with 4 surface surveys
-TESTFILE = 'tests/data/Fulfords.mak'
+TESTFILE = 'tests/data/compass/FULFORDS.MAK'
 
 
 class CompassParsingTestCase(unittest.TestCase):
@@ -20,11 +20,11 @@ class CompassParsingTestCase(unittest.TestCase):
 		makparser = compass.CompassProjectParser(TESTFILE)
 
 		project = makparser.parse()
-		self.assertEqual(project.name, 'Fulfords')
+		self.assertEqual(project.name, 'FULFORDS')
 		self.assertEquals(len(project), 2)
 
 		cave_survey_dat = project.linked_files[0]
-		self.assertEqual(cave_survey_dat.name.lower(), 'Fulford'.lower())  # case-insensitive filesystem!
+		self.assertEqual(cave_survey_dat.name, 'FULFORD')
 		self.assertEqual(len(cave_survey_dat), 25)
 		self.assertTrue('BS' in cave_survey_dat)
 

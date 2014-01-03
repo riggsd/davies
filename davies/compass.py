@@ -69,6 +69,12 @@ class DatFile(object):
 				return True
 		return False
 
+	def __getitem__(self, item):
+		for survey in self.surveys:
+			if item == survey.name:
+				return survey
+		raise KeyError(item)
+
 
 class UTMLocation(object):
 
@@ -127,7 +133,7 @@ class CompassSurveyParser(object):
 		if val == '-999.00':  # no data
 			return None
 
-		if key in CompassSurveyParser._INF_KEYS and val == '-9.90':  # passage
+		if key in CompassSurveyParser._INF_KEYS and val in ('-9.90', '-9999.00'):  # passage
 			return float('inf')
 
 		if key in CompassSurveyParser._FLOAT_KEYS:
@@ -273,6 +279,7 @@ class CompassProjectParser(object):
 			project = Project(name_from_filename(self.makfilename), base_location, file_params)
 
 			for linked_file in linked_files:
+				# TODO: we need to support case-insensitive path resolution on case-sensitive filesystems
 				linked_file_path = os.path.join(os.path.dirname(self.makfilename), os.path.normpath(linked_file.replace('\\', '/')))
 				datfile = CompassDatParser(linked_file_path).parse()
 				project.add_linked_file(datfile)
