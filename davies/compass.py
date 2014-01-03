@@ -4,7 +4,7 @@ Davies: Python library for cave survey data
 
 import os.path
 import logging
-from datetime import datetime
+import datetime
 
 log = logging.getLogger(__name__)
 
@@ -149,7 +149,7 @@ class CompassSurveyParser(object):
 		datestr = datestr.strip()
 		for fmt in ['%m %d %Y', '%m %d %y']:
 			try:
-				return datetime.strptime(datestr, fmt).date()
+				return datetime.datetime.strptime(datestr, fmt).date()
 			except ValueError:
 				pass
 		raise ParseException("Unable to parse SURVEY DATE: %s", datestr)
@@ -304,3 +304,123 @@ class CompassProjectParser(object):
 				project.add_linked_file(datfile)
 
 			return project
+
+
+class Command(object):
+	def __init__(self, x, y, z, name, l, r, u, d, ele):
+		self.x, self.y, self.z = z, y, z
+		self.name = name
+		self.l, self.r, self.u, self.d = l, r, u, d
+		self.ele = ele
+
+class MoveCommand(Command):
+	pass
+
+class DrawCommand(Command):
+	pass
+
+class XCommand(Command):
+	def __init__(self, x2, x1, mystery1, mystery2, z2, z1):
+		self.x2, self.x1 = x2, x1
+		self.mystery1, self.mystery2 = mystery1, mystery2
+		self.z2, self.z1 = z2, z1
+
+
+class Segment(object):
+
+	def __init__(self, name=None, date=None, comment=None):
+		self.name = name
+		self.date = date
+		self.comment = comment
+		self.commands = []
+
+	def add_command(self, command):
+		self.commands.append(command)
+
+	def __len__(self):
+		return len(self.commands)
+
+	def __iter__(self):
+		for command in self.commands:
+			yield command
+
+
+class Plot(object):
+
+	def __init__(self, name):
+		self.name = name
+		self.segments = []
+
+	def add_segment(self, segment):
+		self.segments.append(segment)
+
+	def __len__(self):
+		return len(self.segments)
+
+	def __iter__(self):
+		for segment in self.segments:
+			yield segment
+
+	def __contains__(self, item):
+		for segment in self.segments:
+			if item == segment.name:
+				return True
+		return False
+
+	def __getitem__(self, item):
+		for segment in self.segments:
+			if item == segment.name:
+				return segment
+		raise KeyError(item)
+
+
+class CompassPltParser(object):
+
+	def __init__(self, pltfilename):
+		self.pltfilename = pltfilename
+
+	def parse(self):
+		plt = Plot(name_from_filename(self.pltfilename))
+
+		with open(self.pltfilename, 'rb') as pltfile:
+			first_line = pltfile.readline()
+			c, val = first_line[:1], first_line[1:]
+			if c != 'Z':
+				raise ParseException("Expected PLT file first line to be 'Z' descriptor, found: '%s'" % c)
+			plt.descriptor = val.split()  # TODO: is this bounds?? No clue!
+
+			segment = None
+
+			for line in pltfile:
+				if not line:
+					continue
+
+				c, val = line[:1], line[1:]
+
+				if c == 'S':
+					plt.name = val.strip()
+
+				elif c == 'N':
+					name, _, m, d, y, comment = val.split(None, 5)
+					comment = comment[1:].strip()
+					date = datetime.date(int(y), int(m), int(d))
+					segment = Segment(name, date, comment)
+
+				elif c == 'M':
+					x, y, z, name, _, l, u, d, r, _, ele = val.split()
+					cmd = MoveCommand(float(x), float(y), float(z), name[1:], float(l), float(r), float(u), float(d), float(ele))
+					segment.add_command(cmd)
+
+				elif c == 'D':
+					x, y, z, name, _, l, u, d, r, _, ele = val.split()
+					cmd = DrawCommand(float(x), float(y), float(z), name[1:], float(l), float(r), float(u), float(d), float(ele))
+					segment.add_command(cmd)
+
+				elif c == 'X':
+					#cmd = XCommand(*[float(v) for v in val.split()])  # ??
+					#segment.add_command(cmd)
+
+					plt.add_segment(segment)
+					segment = None
+
+		return plt
