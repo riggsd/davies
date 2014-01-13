@@ -6,7 +6,7 @@ LONG_DESCRIPTION = open('README.rst').read()
 
 setup(
     name='davies',
-    version='0.0.1',
+    version='0.0.2',
     author='David A. Riggs',
     author_email='driggs@myotisoft.com',
     url='https://github.com/riggsd/davies',
