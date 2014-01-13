@@ -9,18 +9,18 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 def compass_stats(datfiles):
-	stats = {}
+    stats = {}
 
-	for datfile in datfiles:
-		for survey in compass.CompassDatParser(datfile).parse():
-			for name in survey.team:
-				stats[name] = stats.get(name, 0.0) + survey.length
+    for datfile in datfiles:
+        for survey in compass.CompassDatParser(datfile).parse():
+            for name in survey.team:
+                stats[name] = stats.get(name, 0.0) + survey.length
 
-	for name in sorted(stats, key=stats.get, reverse=True):
-		print "%s:\t%0.1f" % (name, stats[name])
+    for name in sorted(stats, key=stats.get, reverse=True):
+        print "%s:\t%0.1f" % (name, stats[name])
 
 
 if __name__ == '__main__':
-	if len(sys.argv) == 1:
-		print >> sys.stderr, "usage: compass_stats.py DATFILE..."
-	compass_stats(sys.argv[1:])
+    if len(sys.argv) == 1:
+        print >> sys.stderr, "usage: compass_stats.py DATFILE..."
+    compass_stats(sys.argv[1:])

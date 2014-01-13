@@ -9,8 +9,8 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 def makparser(makfile):
-	compass.CompassProjectParser(makfile).parse()
+    compass.CompassProjectParser(makfile).parse()
 
 
 if __name__ == '__main__':
-	makparser(sys.argv[1])
+    makparser(sys.argv[1])
