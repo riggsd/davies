@@ -1,5 +1,5 @@
 """
-Davies: Python library for cave survey data
+davies.compass: Module for parsing and working with Compass source files
 """
 
 import os.path
@@ -13,6 +13,7 @@ log = logging.getLogger(__name__)
 
 
 class Survey(object):
+    """Representation of a Compass Survey object. A Survey is a container for shot dictionaries."""
 
     def __init__(self, name=None, date=None, comment=None, team=None, declination=None, lrud_format=None, corrections=None, cave_name=None, shot_header=None, shots=None):
         self.name = name
@@ -48,6 +49,7 @@ class Survey(object):
 
 
 class DatFile(object):
+    """Representation of a Compass .DAT File. A DatFile is a container for Survey objects."""
 
     def __init__(self, name=None):
         self.name = name
@@ -91,6 +93,7 @@ class UTMLocation(object):
 
 
 class Project(object):
+    """Representation of a Compass .MAK Project file. A Project is a container for DatFile objects."""
 
     def __init__(self, name=None, base_location=None, file_params=None):
         self.name = name
@@ -117,10 +120,12 @@ def name_from_filename(fname):
 
 
 class ParseException(Exception):
+    """Exception raised when parsing fails."""
     pass
 
 
 class CompassSurveyParser(object):
+    """Parser for a Compass Survey string"""
 
     def __init__(self, survey_str):
         self.survey_str = survey_str
@@ -155,6 +160,7 @@ class CompassSurveyParser(object):
         raise ParseException("Unable to parse SURVEY DATE: %s" % datestr)
 
     def parse(self):
+        """Parse our string and return a Survey object, None, or raise ParseException"""
         if not self.survey_str:
             return None
         lines = self.survey_str.splitlines()
@@ -202,11 +208,13 @@ class CompassSurveyParser(object):
 
 
 class CompassDatParser(object):
+    """Parser for Compass .DAT data files"""
 
     def __init__(self, datfilename):
         self.datfilename = datfilename
 
     def parse(self):
+        """Parse our data file and return a DatFile or raise ParseException"""
         log.debug("Parsing Compass .DAT file %s ...", self.datfilename)
         datobj = DatFile(name_from_filename(self.datfilename))
 
@@ -228,11 +236,13 @@ class CompassDatParser(object):
 
 
 class CompassProjectParser(object):
+    """Parser for Compass .MAK project files."""
 
     def __init__(self, projectfile):
         self.makfilename = projectfile
 
     def parse(self):
+        """Parse our project file and return Project object or raise ParseException"""
         log.debug("Parsing Compass .MAK file %s ...", self.makfilename)
 
         base_location = None
@@ -308,6 +318,7 @@ class CompassProjectParser(object):
 
 
 class Command(object):
+    """Base class for Compass .PLT plot commands."""
     cmd = None
 
     def __init__(self, x, y, z, name, l, r, u, d, ele):
@@ -318,14 +329,17 @@ class Command(object):
 
 
 class MoveCommand(Command):
+    """Compass .PLT plot command for moving the "plotting pen" to a specified X,Y,Z coordinate."""
     cmd = 'M'
 
 
 class DrawCommand(Command):
+    """Compass .PLT plot command for drawing a line segment between two points."""
     cmd = 'D'
 
 
 class Segment(object):
+    """Representation of a Compass .PLT segment. A Segment is a container for Command objects."""
 
     def __init__(self, name=None, date=None, comment=None):
         self.name = name
@@ -351,6 +365,7 @@ class Segment(object):
 
 
 class Plot(object):
+    """Representation of a Compass .PLT plot file. A Plot is a container for Segment objects."""
 
     def __init__(self, name):
         self.name = name
@@ -392,11 +407,13 @@ class Plot(object):
 
 
 class CompassPltParser(object):
+    """Parser for Compass .PLT plot files"""
 
     def __init__(self, pltfilename):
         self.pltfilename = pltfilename
 
     def parse(self):
+        """Parse our .PLT file and return Plot object or raise ParseException"""
         plt = Plot(name_from_filename(self.pltfilename))
 
         with open(self.pltfilename, 'rb') as pltfile:
