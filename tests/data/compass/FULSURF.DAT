@@ -1,0 +1,68 @@
+Fulford Cave
+SURVEY NAME: SS
+SURVEY DATE: 8 28 1988  COMMENT:Surface to shelter
+SURVEY TEAM: 
+Mike Roberts,Ken Kreager,Rick Rhinehart, ,
+DECLINATION:   11.18  FORMAT: DDDDUDLRLADN  CORRECTIONS:  0.00 0.00 0.00
+
+        FROM           TO   LENGTH  BEARING      INC     LEFT       UP     DOWN    RIGHT   FLAGS  COMMENTS
+
+          A1          SS1    62.45   104.00    34.50 -9999.00 -9999.00 -9999.00 -9999.00  #|P#
+         SS1          SS2    35.35   120.50    22.00 -9999.00 -9999.00 -9999.00 -9999.00  #|P#
+         SS2          SS3    25.35   150.50    10.50 -9999.00 -9999.00 -9999.00 -9999.00  #|P#
+         SS3          SS4    67.20   117.00    29.50 -9999.00 -9999.00 -9999.00 -9999.00  #|P#
+         SS4          SS5    60.10   123.50    16.00 -9999.00 -9999.00 -9999.00 -9999.00  #|P#
+         SS5          SS6    54.50   112.00    11.00 -9999.00 -9999.00 -9999.00 -9999.00  #|P#
+         SS6          SS7    36.30    89.00    21.00 -9999.00 -9999.00 -9999.00 -9999.00
+         SS6          SS8    41.70   333.50    -2.50 -9999.00 -9999.00 -9999.00 -9999.00
+
+Fulford Cave
+SURVEY NAME: SC
+SURVEY DATE: 8 28 1988  COMMENT:Surface to Centipede
+SURVEY TEAM: 
+Paul Burger,Fred Luiszer, , ,
+DECLINATION:   11.18  FORMAT: DDDDUDLRLADN  CORRECTIONS:  0.00 0.00 0.00
+
+        FROM           TO   LENGTH  BEARING      INC     LEFT       UP     DOWN    RIGHT   FLAGS  COMMENTS
+
+         SC1           A1    14.63    93.00     1.00 -9999.00 -9999.00 -9999.00 -9999.00  #|P#
+         SC1          SC2    55.94   332.00   -23.00 -9999.00 -9999.00 -9999.00 -9999.00  #|P#
+         SC2          SC3    96.56   321.00   -24.00 -9999.00 -9999.00 -9999.00 -9999.00  #|P#
+         SC3           Z1    13.19     9.00   -37.00 -9999.00 -9999.00 -9999.00 -9999.00
+          Z1         ZZZ1     1.00     0.00     0.00 -9999.00 -9999.00 -9999.00 -9999.00
+
+CENTIPEDE
+SURVEY NAME: Z
+SURVEY DATE: 8 28 1988  COMMENT:Centipede
+SURVEY TEAM: 
+F.LUISZER,P.BURGER
+DECLINATION:   11.18  FORMAT: DDDDUDLRLADN  CORRECTIONS:  0.00 0.00 0.00
+
+        FROM           TO   LENGTH  BEARING      INC     LEFT       UP     DOWN    RIGHT   FLAGS  COMMENTS
+
+          Z1           Z2     2.17   138.00   -43.00     0.00     0.00     2.50     3.00
+          Z2           Z3     7.58    87.00    27.00     2.00     0.00     1.00     1.00
+          Z3          Z3A     4.02    22.00    -4.00     0.00     1.00     4.00     0.00
+         Z3A          Z3B    16.50    31.00     0.00     1.00     1.50     2.00     3.00
+          Z3           Z4     9.38   126.00   -53.00     0.00     1.00     4.00     0.00
+          Z4           Z5     9.00    33.00   -44.00     2.00     1.50     0.50     1.50
+
+CENTIPEDE
+SURVEY NAME: Z+
+SURVEY DATE: 8 27 1989  COMMENT:Centiipede +
+SURVEY TEAM: 
+F.LUISZER,T.LAPPIN,P.BURGER
+DECLINATION:   11.18  FORMAT: DDDDUDLRLADN  CORRECTIONS:  0.00 0.00 0.00
+
+        FROM           TO   LENGTH  BEARING      INC     LEFT       UP     DOWN    RIGHT   FLAGS  COMMENTS
+
+          Z5           Z6     9.40   114.00   -40.00     1.00     1.00     1.00     1.00
+          Z6           Z7     6.32    43.00     3.00     1.50     0.50     2.50     0.00
+          Z7           Z8     3.35     9.45    27.00     0.00     3.00     1.00     3.00
+          Z8           Z9     7.90    16.00    20.50     3.50     2.00     5.00     1.00
+          Z6          Z10    11.50   242.00   -28.00     1.50     1.00     0.50     0.50
+         Z10          Z11     5.45    46.00   -31.00     1.50     1.00     2.50     3.00
+         Z11          Z12    10.52   337.00   -37.00     2.50     0.50     2.50     1.50
+         Z12          Z13     6.05   320.00    -2.00     0.50     4.00     0.50     1.50
+
+

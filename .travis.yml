@@ -1,0 +1,17 @@
+language: python
+
+python:
+    - "2.7"
+    - "3.3"
+    - "pypy"
+
+install:
+    - pip install .
+#    - pip install -r requirements
+
+script: python -m unittest discover -s tests
+
+branches:
+    only:
+        - master
+        - dev
