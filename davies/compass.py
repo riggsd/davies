@@ -28,6 +28,7 @@ class Survey(object):
         self.shots = shots if shots else []
 
     def add_shot(self, shot):
+        """Add a shot dictionary to :attr:`shots`."""
         self.shots.append(shot)
 
     @property
@@ -49,13 +50,14 @@ class Survey(object):
 
 
 class DatFile(object):
-    """Representation of a Compass .DAT File. A DatFile is a container for Survey objects."""
+    """Representation of a Compass .DAT File. A DatFile is a container for :class:`Survey` objects."""
 
     def __init__(self, name=None):
         self.name = name
         self.surveys = []
 
     def add_survey(self, survey):
+        """Add a :class:`Survey` to :attr:`surveys`."""
         self.surveys.append(survey)
 
     def __len__(self):
@@ -79,6 +81,7 @@ class DatFile(object):
 
 
 class UTMLocation(object):
+    """Represents a UTM-based coordinate for fixed stations."""
 
     def __init__(self, easting, northing, elevation, zone=None, convergence=None, datum=None):
         self.easting = easting
@@ -93,7 +96,7 @@ class UTMLocation(object):
 
 
 class Project(object):
-    """Representation of a Compass .MAK Project file. A Project is a container for DatFile objects."""
+    """Representation of a Compass .MAK Project file. A Project is a container for :class:`DatFile` objects."""
 
     def __init__(self, name=None, base_location=None, file_params=None):
         self.name = name
@@ -102,6 +105,7 @@ class Project(object):
         self.linked_files = []
 
     def add_linked_file(self, datfile):
+        """Add a :class:`DatFile` to :attr:`linked_files`."""
         self.linked_files.append(datfile)
 
     def __len__(self):
@@ -125,9 +129,10 @@ class ParseException(Exception):
 
 
 class CompassSurveyParser(object):
-    """Parser for a Compass Survey string"""
+    """Parser for a Compass survey string."""
 
     def __init__(self, survey_str):
+        """:param survey_str: string multiline representation of survey as found in .DAT file"""
         self.survey_str = survey_str
 
     _FLOAT_KEYS = ['LENGTH', 'BEARING', 'AZM2', 'INC', 'INC2', 'LEFT', 'RIGHT', 'UP', 'DOWN']
@@ -160,7 +165,7 @@ class CompassSurveyParser(object):
         raise ParseException("Unable to parse SURVEY DATE: %s" % datestr)
 
     def parse(self):
-        """Parse our string and return a Survey object, None, or raise ParseException"""
+        """Parse our string and return a Survey object, None, or raise :exc:`ParseException`"""
         if not self.survey_str:
             return None
         lines = self.survey_str.splitlines()
@@ -211,10 +216,11 @@ class CompassDatParser(object):
     """Parser for Compass .DAT data files"""
 
     def __init__(self, datfilename):
+        """:param datfilename: string filename"""
         self.datfilename = datfilename
 
     def parse(self):
-        """Parse our data file and return a DatFile or raise ParseException"""
+        """Parse our data file and return a :class:`DatFile` or raise :exc:`ParseException`."""
         log.debug("Parsing Compass .DAT file %s ...", self.datfilename)
         datobj = DatFile(name_from_filename(self.datfilename))
 
@@ -239,10 +245,11 @@ class CompassProjectParser(object):
     """Parser for Compass .MAK project files."""
 
     def __init__(self, projectfile):
+        """:param projectfile: string filename"""
         self.makfilename = projectfile
 
     def parse(self):
-        """Parse our project file and return Project object or raise ParseException"""
+        """Parse our project file and return :class:`Project` object or raise :exc:`ParseException`."""
         log.debug("Parsing Compass .MAK file %s ...", self.makfilename)
 
         base_location = None
@@ -339,7 +346,7 @@ class DrawCommand(Command):
 
 
 class Segment(object):
-    """Representation of a Compass .PLT segment. A Segment is a container for Command objects."""
+    """Representation of a Compass .PLT segment. A Segment is a container for :class:`Command` objects."""
 
     def __init__(self, name=None, date=None, comment=None):
         self.name = name
@@ -349,11 +356,13 @@ class Segment(object):
         self.commands = []
 
     def set_bounds(self, xmin, xmax, ymin, ymax, zmin, zmax):
+        """Set X,Y,Z bounds for the segment."""
         self.xmin, self.xmax = xmin, xmax
         self.ymin, self.ymax = ymin, ymax
         self.zmin, self.zmax = zmin, zmax
 
     def add_command(self, command):
+        """Add a :class:`Command` to :attr:`commands`."""
         self.commands.append(command)
 
     def __len__(self):
@@ -365,9 +374,9 @@ class Segment(object):
 
 
 class Plot(object):
-    """Representation of a Compass .PLT plot file. A Plot is a container for Segment objects."""
+    """Representation of a Compass .PLT plot file. A Plot is a container for :class:`Segment` objects."""
 
-    def __init__(self, name):
+    def __init__(self, name=None):
         self.name = name
         self.utm_zone = None
         self.datum = None
@@ -376,14 +385,17 @@ class Plot(object):
         self.fixed_points = {}  # name -> (x,y,z)
 
     def set_bounds(self, xmin, xmax, ymin, ymax, zmin, zmax):
+        """Set X,Y,Z bounds for the plot."""
         self.xmin, self.xmax = xmin, xmax
         self.ymin, self.ymax = ymin, ymax
         self.zmin, self.zmax = zmin, zmax
 
     def add_segment(self, segment):
+        """Add a :class:`Segment` to :attr:`segments`."""
         self.segments.append(segment)
 
     def add_fixed_point(self, name, coordinate):
+        """Add an (X, Y, Z) tuple to :attr:`fixed_points`."""
         self.fixed_points[name] = coordinate
 
     def __len__(self):
@@ -407,13 +419,14 @@ class Plot(object):
 
 
 class CompassPltParser(object):
-    """Parser for Compass .PLT plot files"""
+    """Parser for Compass .PLT plot files."""
 
     def __init__(self, pltfilename):
+        """:param pltfilename: string filename"""
         self.pltfilename = pltfilename
 
     def parse(self):
-        """Parse our .PLT file and return Plot object or raise ParseException"""
+        """Parse our .PLT file and return :class:`Plot` object or raise :exc:`ParseException`."""
         plt = Plot(name_from_filename(self.pltfilename))
 
         with open(self.pltfilename, 'rb') as pltfile:
