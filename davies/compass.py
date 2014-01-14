@@ -69,13 +69,13 @@ class DatFile(object):
 
     def __contains__(self, item):
         for survey in self.surveys:
-            if item == survey.name:
+            if item == survey.name or item == survey:
                 return True
         return False
 
     def __getitem__(self, item):
         for survey in self.surveys:
-            if item == survey.name:
+            if item == survey.name or item == survey:
                 return survey
         raise KeyError(item)
 
