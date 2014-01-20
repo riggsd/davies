@@ -41,3 +41,6 @@ class CompassParsingTestCase(unittest.TestCase):
         self.assertEqual(last_shot['BEARING'], 307.0)
         self.assertEqual(last_shot['INC'], -23.0)
         self.assertEqual(last_shot['LEFT'], float('inf'))
+
+        self.assertEqual(cave_survey_dat['XS'].shots[0]['FLAGS'], 'P')
+        # TODO: this test data doesn't have any COMMENTS

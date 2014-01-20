@@ -5,6 +5,7 @@ davies.compass: Module for parsing and working with Compass source files
 import os.path
 import logging
 import datetime
+import codecs
 
 log = logging.getLogger(__name__)
 
@@ -33,6 +34,7 @@ class Survey(object):
 
     @property
     def length(self):
+        """Total surveyed length."""
         return sum([shot['LENGTH'] for shot in self.shots])
 
     def __len__(self):
@@ -50,7 +52,12 @@ class Survey(object):
 
 
 class DatFile(object):
-    """Representation of a Compass .DAT File. A DatFile is a container for :class:`Survey` objects."""
+    """
+    Representation of a Compass .DAT File. A DatFile is a container for :class:`Survey` objects.
+
+    :ivar name:    (string) the DatFile's "name", not necessarily related to its filename
+    :ivar surveys: (list of :class:`Survey`)
+    """
 
     def __init__(self, name=None):
         self.name = name
@@ -59,6 +66,11 @@ class DatFile(object):
     def add_survey(self, survey):
         """Add a :class:`Survey` to :attr:`surveys`."""
         self.surveys.append(survey)
+
+    @property
+    def length(self):
+        """Total surveyed length."""
+        return sum([survey.length for survey in self.surveys])
 
     def __len__(self):
         return len(self.surveys)
@@ -96,7 +108,12 @@ class UTMLocation(object):
 
 
 class Project(object):
-    """Representation of a Compass .MAK Project file. A Project is a container for :class:`DatFile` objects."""
+    """
+    Representation of a Compass .MAK Project file. A Project is a container for :class:`DatFile` objects.
+
+    :ivar name:         (string)
+    :ivar linked_files: (list of :class:`DatFile`)
+    """
 
     def __init__(self, name=None, base_location=None, file_params=None):
         self.name = name
@@ -114,6 +131,12 @@ class Project(object):
     def __iter__(self):
         for linked_file in self.linked_files:
             yield linked_file
+
+    def __getitem__(self, item):
+        for datfile in self.linked_files:
+            if item == datfile.name or item == datfile:
+                return datfile
+        raise KeyError(item)
 
 
 # File Parsing Utilities
@@ -187,7 +210,7 @@ class CompassSurveyParser(object):
         comment = date_comment_toks[1].strip() if len(date_comment_toks) > 1 else ''
 
         lines.pop(0)  # SURVEY TEAM:\n
-        team = [member.strip() for member in lines.pop(0).split(',')]
+        team = [codecs.decode(member.strip(), 'utf-8', 'replace') for member in lines.pop(0).split(',')]  # FIXME: ASCII file but found 'Tanya Pietra\xdf'
 
         dec_fmt_corr = lines.pop(0)  # TODO: implement declination, format, instrument correction(s)
 
@@ -198,11 +221,19 @@ class CompassSurveyParser(object):
         survey = Survey(name=name, date=date, comment=comment, team=team, cave_name=cave_name, shot_header=shot_header)
 
         # TODO: for now, let's totally ignore flags and comments
-        shot_header = shot_header[:-2]
         shots = []
         shot_lines = lines
         for shot_line in shot_lines:
-            shot_vals = shot_line.split(None, len(shot_header))[:len(shot_header)]
+            shot_vals = shot_line.split(None, len(shot_header) - 2)  # last two columns are FLAGS and COMMENTS, either one may be missing
+
+            if len(shot_vals) > len(shot_header) - 2:
+                flags_comment = shot_vals.pop()
+                if not flags_comment.startswith('#|'):
+                    flags, comment = None, flags_comment
+                else:
+                    flags, comment = flags_comment.split('#|', 1)[1].split('#', 1)
+                shot_vals += [flags, comment.strip()]
+
             shot = dict(zip(shot_header, shot_vals))
             shot = {k: self._coerce(k, v) for (k, v) in shot.items()}
             survey.add_shot(shot)
@@ -216,7 +247,7 @@ class CompassDatParser(object):
     """Parser for Compass .DAT data files"""
 
     def __init__(self, datfilename):
-        """:param datfilename: string filename"""
+        """:param datfilename: (string) filename"""
         self.datfilename = datfilename
 
     def parse(self):
@@ -245,7 +276,7 @@ class CompassProjectParser(object):
     """Parser for Compass .MAK project files."""
 
     def __init__(self, projectfile):
-        """:param projectfile: string filename"""
+        """:param projectfile: (string) filename"""
         self.makfilename = projectfile
 
     def parse(self):
@@ -420,6 +451,7 @@ class Plot(object):
 
 class CompassPltParser(object):
     """Parser for Compass .PLT plot files."""
+    # See:  http://www.fountainware.com/compass/Documents/FileFormats/PlotFileFormat.htm
 
     def __init__(self, pltfilename):
         """:param pltfilename: string filename"""
