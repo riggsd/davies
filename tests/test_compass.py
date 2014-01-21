@@ -44,3 +44,19 @@ class CompassParsingTestCase(unittest.TestCase):
 
         self.assertEqual(cave_survey_dat['XS'].shots[0]['FLAGS'], 'P')
         # TODO: this test data doesn't have any COMMENTS
+
+
+class CompassShotCorrection(unittest.TestCase):
+
+    def runTest(self):
+        # TODO: add instrument correction
+        shot = compass.Shot(declination=8.5)
+        shot['BEARING'] = 7.0
+        shot['AZM2'] = 189.0
+        shot['INC'] = -4
+        shot['INC2'] = 3.5
+        shot['DIST'] = 15.7
+
+        self.assertEqual(shot.azm, 8.0 + 8.5)
+        self.assertEqual(shot.inc, -3.75)
+

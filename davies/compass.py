@@ -6,6 +6,7 @@ import os.path
 import logging
 import datetime
 import codecs
+from collections import OrderedDict
 
 log = logging.getLogger(__name__)
 
@@ -13,8 +14,47 @@ log = logging.getLogger(__name__)
 # Compass OO Model
 
 
+class Shot(OrderedDict):
+    """Representation of a single shot in a Compass Survey."""
+
+    def __init__(self, *args, **kwargs):
+        self.declination = kwargs.pop('declination', 0.0)
+        OrderedDict.__init__(self, *args, **kwargs)
+
+    @property
+    def azm(self):
+        """Corrected azimuth, taking into account backsight, declination, and compass corrections."""
+        azm1 = self.get('BEARING', None)
+        azm2 = self.get('AZM2', None)
+        if azm1 is None and azm2 is None:
+            return None
+        if azm2 is None:
+            return azm1 + self.declination
+        if azm1 is None:
+            return (azm2 + 180) % 360 + self.declination
+        return (azm1 + (azm2 + 180) % 360) / 2.0 + self.declination
+
+    @property
+    def inc(self):
+        """Corrected inclination, taking into account backsight and clino corrections."""
+        inc1 = self.get('INC', None)
+        inc2 = self.get('INC2', None)
+        if inc1 is None and inc2 is None:
+            return None
+        if inc2 is None:
+            return inc1
+        if inc1 is None:
+            return -1 * inc2
+        return (inc1 - inc2) / 2.0
+
+    @property
+    def dist(self):
+        """Corrected distance, taking into account tape correction."""
+        return self.get('DIST', None)
+
+
 class Survey(object):
-    """Representation of a Compass Survey object. A Survey is a container for shot dictionaries."""
+    """Representation of a Compass Survey object. A Survey is a container for :class:`Shot` objects."""
 
     def __init__(self, name=None, date=None, comment=None, team=None, declination=None, lrud_format=None, corrections=None, cave_name=None, shot_header=None, shots=None):
         self.name = name
@@ -234,7 +274,7 @@ class CompassSurveyParser(object):
                     flags, comment = flags_comment.split('#|', 1)[1].split('#', 1)
                 shot_vals += [flags, comment.strip()]
 
-            shot = dict(zip(shot_header, shot_vals))
+            shot = Shot(zip(shot_header, shot_vals))
             shot = {k: self._coerce(k, v) for (k, v) in shot.items()}
             survey.add_shot(shot)
 
