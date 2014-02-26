@@ -48,9 +48,9 @@ class Shot(OrderedDict):
         return (inc1 - inc2) / 2.0
 
     @property
-    def dist(self):
+    def length(self):
         """Corrected distance, taking into account tape correction."""
-        return self.get('DIST', None)
+        return self.get('LENGTH', None)
 
 
 class Survey(object):
@@ -75,7 +75,7 @@ class Survey(object):
     @property
     def length(self):
         """Total surveyed length."""
-        return sum([shot['LENGTH'] for shot in self.shots])
+        return sum([shot.length for shot in self.shots])
 
     def __len__(self):
         return len(self.shots)
@@ -274,8 +274,7 @@ class CompassSurveyParser(object):
                     flags, comment = flags_comment.split('#|', 1)[1].split('#', 1)
                 shot_vals += [flags, comment.strip()]
 
-            shot = Shot(zip(shot_header, shot_vals))
-            shot = {k: self._coerce(k, v) for (k, v) in shot.items()}
+            shot = Shot([(header, self._coerce(header, val)) for (header, val) in zip(shot_header, shot_vals)])
             survey.add_shot(shot)
 
         log.debug("Survey: name=%s shots=%d length=%0.1f date=%s team=%s\n%s", name, len(shots), survey.length, date, team, '\n'.join([str(shot) for shot in survey.shots]))
