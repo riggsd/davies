@@ -5,6 +5,8 @@ davies.compass.plt: Module for parsing and working with Compass .PLT plot files
 import logging
 import datetime
 
+from davies.compass import ParseException, name_from_filename
+
 log = logging.getLogger(__name__)
 
 
