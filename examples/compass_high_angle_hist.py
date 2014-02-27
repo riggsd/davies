@@ -16,7 +16,8 @@ def compass_stats(datfiles, bin_size=5, display_scale=3):
     for datfile in datfiles:
         for survey in compass.CompassDatParser(datfile).parse():
             for shot in survey:
-                histogram[int(abs(shot.inc) // bin_size)] += 1
+                bin = int(abs(shot.inc) // bin_size)
+                histogram[bin] += 1
 
     n = sum(histogram)
     high_n = sum(histogram[60/5:-1])
