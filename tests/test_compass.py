@@ -14,36 +14,49 @@ TESTFILE = 'tests/data/compass/FULFORDS.MAK'
 
 
 class CompassParsingTestCase(unittest.TestCase):
-    """In liu of a real test suite, just drive the code by parsing a known file"""
+    """Parse the sample Compass data and test based on its known values"""
 
-    def runTest(self):
+    def setUp(self):
         makparser = compass.CompassProjectParser(TESTFILE)
+        self.project = makparser.parse()
+        self.assertTrue(self.project.linked_files, 'Sanity check failed: no linked_files found!')
+        self.cave_survey_dat = self.project.linked_files[0]
+        self.bs_survey = self.cave_survey_dat['BS']
+        self.last_shot = self.bs_survey.shots[-1]
+        self.shot_w_flags = self.cave_survey_dat['XS'].shots[0]
 
-        project = makparser.parse()
-        self.assertEqual(project.name, 'FULFORDS')
-        self.assertEqual(len(project), 2)
+    def test_name(self):
+        self.assertEqual(self.project.name, 'FULFORDS')
 
-        cave_survey_dat = project.linked_files[0]
-        self.assertEqual(cave_survey_dat.name, 'FULFORD')
-        self.assertEqual(len(cave_survey_dat), 25)
-        self.assertTrue('BS' in cave_survey_dat)
+    def test_len(self):
+        self.assertEqual(len(self.project), 2)
 
-        bs_survey = cave_survey_dat['BS']
-        self.assertTrue('Stan Allison' in bs_survey.team)
-        self.assertEqual(bs_survey.date, datetime.date(1989, 2, 11))
-        #self.assertEqual(bs_survey.declination, 11.18)  # TODO: implement declination
-        self.assertEqual(len(bs_survey), 15)
+    def test_dat(self):
+        dat = self.cave_survey_dat
+        self.assertEqual(dat.name, 'FULFORD')
+        self.assertEqual(len(dat), 25)
+        self.assertTrue('BS' in dat)
 
-        last_shot = bs_survey.shots[-1]
-        self.assertEqual(last_shot['FROM'], 'BSA2')
-        self.assertEqual(last_shot['TO'], 'BS1')
-        self.assertEqual(last_shot['LENGTH'], 37.85)
-        self.assertEqual(last_shot['BEARING'], 307.0)
-        self.assertEqual(last_shot['INC'], -23.0)
-        self.assertEqual(last_shot['LEFT'], float('inf'))
+    def test_survey(self):
+        survey = self.bs_survey
+        self.assertTrue('Stan Allison' in survey.team)
+        self.assertEqual(survey.date, datetime.date(1989, 2, 11))
+        #self.assertEqual(survey.declination, 11.18)  # TODO: implement declination
+        self.assertEqual(len(survey), 15)
 
-        self.assertEqual(cave_survey_dat['XS'].shots[0]['FLAGS'], 'P')
+    def test_shot(self):
+        shot = self.last_shot
+        self.assertEqual(shot['FROM'], 'BSA2')
+        self.assertEqual(shot['TO'], 'BS1')
+        self.assertEqual(shot['LENGTH'], 37.85)
+        self.assertEqual(shot['BEARING'], 307.0)
+        self.assertEqual(shot['INC'], -23.0)
+        self.assertEqual(shot['LEFT'], float('inf'))
         # TODO: this test data doesn't have any COMMENTS
+
+    def test_shot_flags(self):
+        shot = self.shot_w_flags
+        self.assertEqual(shot['FLAGS'], 'P')
 
 
 class CompassShotCorrection(unittest.TestCase):
