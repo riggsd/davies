@@ -10,6 +10,9 @@ from collections import OrderedDict
 
 log = logging.getLogger(__name__)
 
+__all__ = 'Project', 'DatFile', 'Survey', 'Shot', 'UTMLocation', \
+          'CompassProjectParser', 'CompassDatParser', 'ParseException'
+
 
 # Compass OO Model
 
@@ -250,7 +253,7 @@ class CompassSurveyParser(object):
         comment = date_comment_toks[1].strip() if len(date_comment_toks) > 1 else ''
 
         lines.pop(0)  # SURVEY TEAM:\n
-        team = [codecs.decode(member.strip(), 'utf-8', 'replace') for member in lines.pop(0).split(',')]  # FIXME: ASCII file but found 'Tanya Pietra\xdf'
+        team = [member.strip() for member in lines.pop(0).split(',')]  # We're already decoding from windows-1252 codec so we have unicode for names like 'Tanya Pietra\xdf'
 
         dec_fmt_corr = lines.pop(0)  # TODO: implement declination, format, instrument correction(s)
 
@@ -271,7 +274,10 @@ class CompassSurveyParser(object):
                 if not flags_comment.startswith('#|'):
                     flags, comment = None, flags_comment
                 else:
-                    flags, comment = flags_comment.split('#|', 1)[1].split('#', 1)
+                    try:
+                        flags, comment = flags_comment.split('#|', 1)[1].split('#', 1)
+                    except ValueError:
+                        raise ParseException('Invalid flags in %s survey: %s' % (name, flags_comment))  # A 2013 bug in Compass inserted corrupt binary garbage into FLAGS column, causes parse to barf
                 shot_vals += [flags, comment.strip()]
 
             shot = Shot([(header, self._coerce(header, val)) for (header, val) in zip(shot_header, shot_vals)])
@@ -294,7 +300,7 @@ class CompassDatParser(object):
         log.debug("Parsing Compass .DAT file %s ...", self.datfilename)
         datobj = DatFile(name_from_filename(self.datfilename))
 
-        with open(self.datfilename, 'rb') as datfile:
+        with codecs.open(self.datfilename, 'rb', 'windows-1252') as datfile:
             full_contents = datfile.read()
             survey_strs = [survey_str.strip() for survey_str in full_contents.split('\x0C')]
 
@@ -335,7 +341,7 @@ class CompassProjectParser(object):
             else:
                 return toks[0]  # TODO: implement link stations and fixed stations
 
-        with open(self.makfilename, 'rb') as makfile:
+        with codecs.open(self.makfilename, 'rb', 'windows-1252') as makfile:
             prev = None
 
             for line in makfile:

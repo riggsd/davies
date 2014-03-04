@@ -1,0 +1,13 @@
+Shoveleater
+SURVEY NAME: i18n
+SURVEY DATE: 8 30 2008  COMMENT:team member name contains special character
+SURVEY TEAM: 
+Mark Minton, Yvonne Droms, James Hunter, Tommy Shifflett, Tanya Pietraﬂ
+DECLINATION:   -9.06  FORMAT: DIDDLRUDLADB  CORRECTIONS:  0.00 0.00 0.00
+
+        FROM           TO   LENGTH  BEARING      INC     LEFT       UP     DOWN    RIGHT     AZM2     INC2   FLAGS  COMMENTS
+
+       i18n1        i18n2     2.00   261.00    -3.00     3.00    25.00    65.00     0.00    80.00     2.50
+       i18n2        i18n3    65.00     0.00   -90.00     1.00    90.00     0.00     3.00   180.00    90.00
+
+

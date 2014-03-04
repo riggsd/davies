@@ -23,6 +23,7 @@ def compass_stats(datfiles, bin_size=5, display_scale=3):
     high_n = sum(histogram[60/5:-1])
     high_n_percent = high_n / float(n) * 100.0
 
+    print 'INC\tCOUNT\tPERCENT\tHISTOGRAM'
     for bin, count in enumerate(histogram):
         percent = count / float(n) * 100.0
         print '%02d\t%4d\t%5.1f%%\t%s' % (bin * bin_size, count, percent, '#' * int(round(percent * display_scale)))

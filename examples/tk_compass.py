@@ -7,6 +7,9 @@ from Tkinter import *
 import ttk
 import tkFileDialog
 
+import sys
+import logging
+
 from davies import compass
 from davies.event import event
 
@@ -316,6 +319,9 @@ def main(parent):
 
 
 if __name__ == '__main__':
+    log_level = logging.DEBUG if '--verbose' in sys.argv else logging.INFO
+    logging.basicConfig(level=log_level)
+
     root = Tk()
     root.option_add('*tearOff', FALSE)
     root.columnconfigure(0, weight=1)

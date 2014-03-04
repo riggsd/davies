@@ -9,6 +9,8 @@ from davies.compass import ParseException, name_from_filename
 
 log = logging.getLogger(__name__)
 
+__all__ = 'Plot', 'Segment', 'MoveCommand', 'DrawCommand', 'CompassPltParser'
+
 
 class Command(object):
     """Base class for Compass .PLT plot commands."""

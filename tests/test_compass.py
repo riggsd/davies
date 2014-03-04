@@ -1,4 +1,3 @@
-
 import unittest
 import datetime
 
@@ -57,6 +56,15 @@ class CompassParsingTestCase(unittest.TestCase):
     def test_shot_flags(self):
         shot = self.shot_w_flags
         self.assertEqual(shot['FLAGS'], 'P')
+
+
+class CompassSpecialCharacters(unittest.TestCase):
+
+    def runTest(self):
+        dat = compass.CompassDatParser('tests/data/compass/unicode.dat').parse()
+        for name in dat.surveys[0].team:
+            if name.startswith('Tanya'):
+                self.assertEqual(name, u'Tanya Pietra\xdf')
 
 
 class CompassShotCorrection(unittest.TestCase):
