@@ -50,7 +50,7 @@ def clean():
 def release(version):
     """Perform git-flow release merging and PyPI upload."""
     clean()
-    local('git co master')
+    local('git checkout master')
     local('git merge --no-ff dev')
     local('git tag %s' % version)
     local('python setup.py sdist upload')
