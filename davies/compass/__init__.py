@@ -5,15 +5,59 @@ davies.compass: Module for parsing and working with Compass source files
 import os.path
 import logging
 import datetime
+import codecs
+from collections import OrderedDict
 
 log = logging.getLogger(__name__)
+
+__all__ = 'Project', 'DatFile', 'Survey', 'Shot', 'UTMLocation', \
+          'CompassProjectParser', 'CompassDatParser', 'ParseException'
 
 
 # Compass OO Model
 
 
+class Shot(OrderedDict):
+    """Representation of a single shot in a Compass Survey."""
+
+    def __init__(self, *args, **kwargs):
+        self.declination = kwargs.pop('declination', 0.0)
+        OrderedDict.__init__(self, *args, **kwargs)
+
+    @property
+    def azm(self):
+        """Corrected azimuth, taking into account backsight, declination, and compass corrections."""
+        azm1 = self.get('BEARING', None)
+        azm2 = self.get('AZM2', None)
+        if azm1 is None and azm2 is None:
+            return None
+        if azm2 is None:
+            return azm1 + self.declination
+        if azm1 is None:
+            return (azm2 + 180) % 360 + self.declination
+        return (azm1 + (azm2 + 180) % 360) / 2.0 + self.declination
+
+    @property
+    def inc(self):
+        """Corrected inclination, taking into account backsight and clino corrections."""
+        inc1 = self.get('INC', None)
+        inc2 = self.get('INC2', None)
+        if inc1 is None and inc2 is None:
+            return None
+        if inc2 is None:
+            return inc1
+        if inc1 is None:
+            return -1 * inc2
+        return (inc1 - inc2) / 2.0
+
+    @property
+    def length(self):
+        """Corrected distance, taking into account tape correction."""
+        return self.get('LENGTH', None)
+
+
 class Survey(object):
-    """Representation of a Compass Survey object. A Survey is a container for shot dictionaries."""
+    """Representation of a Compass Survey object. A Survey is a container for :class:`Shot` objects."""
 
     def __init__(self, name=None, date=None, comment=None, team=None, declination=None, lrud_format=None, corrections=None, cave_name=None, shot_header=None, shots=None):
         self.name = name
@@ -28,11 +72,13 @@ class Survey(object):
         self.shots = shots if shots else []
 
     def add_shot(self, shot):
+        """Add a shot dictionary to :attr:`shots`."""
         self.shots.append(shot)
 
     @property
     def length(self):
-        return sum([shot['LENGTH'] for shot in self.shots])
+        """Total surveyed length."""
+        return sum([shot.length for shot in self.shots])
 
     def __len__(self):
         return len(self.shots)
@@ -49,14 +95,25 @@ class Survey(object):
 
 
 class DatFile(object):
-    """Representation of a Compass .DAT File. A DatFile is a container for Survey objects."""
+    """
+    Representation of a Compass .DAT File. A DatFile is a container for :class:`Survey` objects.
+
+    :ivar name:    (string) the DatFile's "name", not necessarily related to its filename
+    :ivar surveys: (list of :class:`Survey`)
+    """
 
     def __init__(self, name=None):
         self.name = name
         self.surveys = []
 
     def add_survey(self, survey):
+        """Add a :class:`Survey` to :attr:`surveys`."""
         self.surveys.append(survey)
+
+    @property
+    def length(self):
+        """Total surveyed length."""
+        return sum([survey.length for survey in self.surveys])
 
     def __len__(self):
         return len(self.surveys)
@@ -67,18 +124,19 @@ class DatFile(object):
 
     def __contains__(self, item):
         for survey in self.surveys:
-            if item == survey.name:
+            if item == survey.name or item == survey:
                 return True
         return False
 
     def __getitem__(self, item):
         for survey in self.surveys:
-            if item == survey.name:
+            if item == survey.name or item == survey:
                 return survey
         raise KeyError(item)
 
 
 class UTMLocation(object):
+    """Represents a UTM-based coordinate for fixed stations."""
 
     def __init__(self, easting, northing, elevation, zone=None, convergence=None, datum=None):
         self.easting = easting
@@ -93,7 +151,12 @@ class UTMLocation(object):
 
 
 class Project(object):
-    """Representation of a Compass .MAK Project file. A Project is a container for DatFile objects."""
+    """
+    Representation of a Compass .MAK Project file. A Project is a container for :class:`DatFile` objects.
+
+    :ivar name:         (string)
+    :ivar linked_files: (list of :class:`DatFile`)
+    """
 
     def __init__(self, name=None, base_location=None, file_params=None):
         self.name = name
@@ -102,6 +165,7 @@ class Project(object):
         self.linked_files = []
 
     def add_linked_file(self, datfile):
+        """Add a :class:`DatFile` to :attr:`linked_files`."""
         self.linked_files.append(datfile)
 
     def __len__(self):
@@ -110,6 +174,12 @@ class Project(object):
     def __iter__(self):
         for linked_file in self.linked_files:
             yield linked_file
+
+    def __getitem__(self, item):
+        for datfile in self.linked_files:
+            if item == datfile.name or item == datfile:
+                return datfile
+        raise KeyError(item)
 
 
 # File Parsing Utilities
@@ -125,9 +195,10 @@ class ParseException(Exception):
 
 
 class CompassSurveyParser(object):
-    """Parser for a Compass Survey string"""
+    """Parser for a Compass survey string."""
 
     def __init__(self, survey_str):
+        """:param survey_str: string multiline representation of survey as found in .DAT file"""
         self.survey_str = survey_str
 
     _FLOAT_KEYS = ['LENGTH', 'BEARING', 'AZM2', 'INC', 'INC2', 'LEFT', 'RIGHT', 'UP', 'DOWN']
@@ -160,7 +231,7 @@ class CompassSurveyParser(object):
         raise ParseException("Unable to parse SURVEY DATE: %s" % datestr)
 
     def parse(self):
-        """Parse our string and return a Survey object, None, or raise ParseException"""
+        """Parse our string and return a Survey object, None, or raise :exc:`ParseException`"""
         if not self.survey_str:
             return None
         lines = self.survey_str.splitlines()
@@ -182,7 +253,7 @@ class CompassSurveyParser(object):
         comment = date_comment_toks[1].strip() if len(date_comment_toks) > 1 else ''
 
         lines.pop(0)  # SURVEY TEAM:\n
-        team = [member.strip() for member in lines.pop(0).split(',')]
+        team = [member.strip() for member in lines.pop(0).split(',')]  # We're already decoding from windows-1252 codec so we have unicode for names like 'Tanya Pietra\xdf'
 
         dec_fmt_corr = lines.pop(0)  # TODO: implement declination, format, instrument correction(s)
 
@@ -193,13 +264,23 @@ class CompassSurveyParser(object):
         survey = Survey(name=name, date=date, comment=comment, team=team, cave_name=cave_name, shot_header=shot_header)
 
         # TODO: for now, let's totally ignore flags and comments
-        shot_header = shot_header[:-2]
         shots = []
         shot_lines = lines
         for shot_line in shot_lines:
-            shot_vals = shot_line.split(None, len(shot_header))[:len(shot_header)]
-            shot = dict(zip(shot_header, shot_vals))
-            shot = {k: self._coerce(k, v) for (k, v) in shot.items()}
+            shot_vals = shot_line.split(None, len(shot_header) - 2)  # last two columns are FLAGS and COMMENTS, either one may be missing
+
+            if len(shot_vals) > len(shot_header) - 2:
+                flags_comment = shot_vals.pop()
+                if not flags_comment.startswith('#|'):
+                    flags, comment = None, flags_comment
+                else:
+                    try:
+                        flags, comment = flags_comment.split('#|', 1)[1].split('#', 1)
+                    except ValueError:
+                        raise ParseException('Invalid flags in %s survey: %s' % (name, flags_comment))  # A 2013 bug in Compass inserted corrupt binary garbage into FLAGS column, causes parse to barf
+                shot_vals += [flags, comment.strip()]
+
+            shot = Shot([(header, self._coerce(header, val)) for (header, val) in zip(shot_header, shot_vals)])
             survey.add_shot(shot)
 
         log.debug("Survey: name=%s shots=%d length=%0.1f date=%s team=%s\n%s", name, len(shots), survey.length, date, team, '\n'.join([str(shot) for shot in survey.shots]))
@@ -211,14 +292,15 @@ class CompassDatParser(object):
     """Parser for Compass .DAT data files"""
 
     def __init__(self, datfilename):
+        """:param datfilename: (string) filename"""
         self.datfilename = datfilename
 
     def parse(self):
-        """Parse our data file and return a DatFile or raise ParseException"""
+        """Parse our data file and return a :class:`DatFile` or raise :exc:`ParseException`."""
         log.debug("Parsing Compass .DAT file %s ...", self.datfilename)
         datobj = DatFile(name_from_filename(self.datfilename))
 
-        with open(self.datfilename, 'rb') as datfile:
+        with codecs.open(self.datfilename, 'rb', 'windows-1252') as datfile:
             full_contents = datfile.read()
             survey_strs = [survey_str.strip() for survey_str in full_contents.split('\x0C')]
 
@@ -239,10 +321,11 @@ class CompassProjectParser(object):
     """Parser for Compass .MAK project files."""
 
     def __init__(self, projectfile):
+        """:param projectfile: (string) filename"""
         self.makfilename = projectfile
 
     def parse(self):
-        """Parse our project file and return Project object or raise ParseException"""
+        """Parse our project file and return :class:`Project` object or raise :exc:`ParseException`."""
         log.debug("Parsing Compass .MAK file %s ...", self.makfilename)
 
         base_location = None
@@ -258,7 +341,7 @@ class CompassProjectParser(object):
             else:
                 return toks[0]  # TODO: implement link stations and fixed stations
 
-        with open(self.makfilename, 'rb') as makfile:
+        with codecs.open(self.makfilename, 'rb', 'windows-1252') as makfile:
             prev = None
 
             for line in makfile:
@@ -315,164 +398,3 @@ class CompassProjectParser(object):
                 project.add_linked_file(datfile)
 
             return project
-
-
-class Command(object):
-    """Base class for Compass .PLT plot commands."""
-    cmd = None
-
-    def __init__(self, x, y, z, name, l, r, u, d, ele):
-        self.x, self.y, self.z = x, y, z
-        self.name = name
-        self.l, self.r, self.u, self.d = l, r, u, d
-        self.ele = ele
-
-
-class MoveCommand(Command):
-    """Compass .PLT plot command for moving the "plotting pen" to a specified X,Y,Z coordinate."""
-    cmd = 'M'
-
-
-class DrawCommand(Command):
-    """Compass .PLT plot command for drawing a line segment between two points."""
-    cmd = 'D'
-
-
-class Segment(object):
-    """Representation of a Compass .PLT segment. A Segment is a container for Command objects."""
-
-    def __init__(self, name=None, date=None, comment=None):
-        self.name = name
-        self.date = date
-        self.comment = comment
-        self.xmin = self.xmax = self.ymin = self.ymax = self.zmin = self.zmax = None
-        self.commands = []
-
-    def set_bounds(self, xmin, xmax, ymin, ymax, zmin, zmax):
-        self.xmin, self.xmax = xmin, xmax
-        self.ymin, self.ymax = ymin, ymax
-        self.zmin, self.zmax = zmin, zmax
-
-    def add_command(self, command):
-        self.commands.append(command)
-
-    def __len__(self):
-        return len(self.commands)
-
-    def __iter__(self):
-        for command in self.commands:
-            yield command
-
-
-class Plot(object):
-    """Representation of a Compass .PLT plot file. A Plot is a container for Segment objects."""
-
-    def __init__(self, name):
-        self.name = name
-        self.utm_zone = None
-        self.datum = None
-        self.xmin = self.xmax = self.ymin = self.ymax = self.zmin = self.zmax = None
-        self.segments = []
-        self.fixed_points = {}  # name -> (x,y,z)
-
-    def set_bounds(self, xmin, xmax, ymin, ymax, zmin, zmax):
-        self.xmin, self.xmax = xmin, xmax
-        self.ymin, self.ymax = ymin, ymax
-        self.zmin, self.zmax = zmin, zmax
-
-    def add_segment(self, segment):
-        self.segments.append(segment)
-
-    def add_fixed_point(self, name, coordinate):
-        self.fixed_points[name] = coordinate
-
-    def __len__(self):
-        return len(self.segments)
-
-    def __iter__(self):
-        for segment in self.segments:
-            yield segment
-
-    def __contains__(self, item):
-        for segment in self.segments:
-            if item == segment.name:
-                return True
-        return False
-
-    def __getitem__(self, item):
-        for segment in self.segments:
-            if item == segment.name:
-                return segment
-        raise KeyError(item)
-
-
-class CompassPltParser(object):
-    """Parser for Compass .PLT plot files"""
-
-    def __init__(self, pltfilename):
-        self.pltfilename = pltfilename
-
-    def parse(self):
-        """Parse our .PLT file and return Plot object or raise ParseException"""
-        plt = Plot(name_from_filename(self.pltfilename))
-
-        with open(self.pltfilename, 'rb') as pltfile:
-            first_line = pltfile.readline()
-            c, val = first_line[:1], first_line[1:]
-
-            segment = None
-
-            for line in pltfile:
-                if not line:
-                    continue
-
-                c, val = line[:1], line[1:]
-
-                if c == 'Z':
-                    plt.set_bounds(*(float(v) for v in val.split()))
-
-                if c == 'S':
-                    # this is probably more appropriately called a "segment"
-                    if not plt.name:
-                        plt.name = val.strip()
-
-                elif c == 'G':
-                    plt.utm_zone = int(val)
-
-                elif c == 'O':
-                    plt.datum = val
-
-                elif c == 'N':
-                    name, _, m, d, y, comment = val.split(None, 5)
-                    comment = comment[1:].strip()
-                    date = datetime.date(int(y), int(m), int(d))
-                    segment = Segment(name, date, comment)
-
-                elif c == 'M':
-                    x, y, z, name, _, l, u, d, r, _, ele = val.split()
-                    cmd = MoveCommand(float(x), float(y), float(z), name[1:], float(l), float(r), float(u), float(d), float(ele))
-                    segment.add_command(cmd)
-
-                elif c == 'D':
-                    x, y, z, name, _, l, u, d, r, _, ele = val.split()
-                    cmd = DrawCommand(float(x), float(y), float(z), name[1:], float(l), float(r), float(u), float(d), float(ele))
-                    segment.add_command(cmd)
-
-                elif c == 'X':
-                    segment.set_bounds(*(float(v) for v in val.split()))
-
-                    # An X-bounds command signifies end of segment
-                    plt.add_segment(segment)
-                    segment = None
-
-                elif c == 'P':
-                    name, x, y, z = val.split()
-                    plt.add_fixed_point(name, (float(x), float(y), float(z)))
-
-                elif c == '\x1A':
-                    continue  # "soft EOF" ascii SUB ^Z
-
-                else:
-                    raise ParseException("Unknown PLT control code '%s': %s" % (c, val))
-
-        return plt

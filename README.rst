@@ -85,4 +85,4 @@ still serves as an inspiration today to the cave mappers of West Virginia, of th
 License
 -------
 
-Davies is Open Source software licensed under the MIT License, and is copyright (C) Myotisoft LLC.
+Davies is Open Source software licensed under the MIT License, and is copyright (C) 2013 - 2014 Myotisoft LLC.

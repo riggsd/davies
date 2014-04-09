@@ -2,11 +2,15 @@
 
 from distutils.core import setup
 
+from davies import __version__
+
+
 LONG_DESCRIPTION = open('README.rst').read()
+
 
 setup(
     name='davies',
-    version='0.0.2',
+    version=__version__,
     author='David A. Riggs',
     author_email='driggs@myotisoft.com',
     url='https://github.com/riggsd/davies',

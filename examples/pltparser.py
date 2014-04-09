@@ -6,11 +6,11 @@ import networkx as nx
 
 from matplotlib import pyplot
 
-from davies import compass
+from davies.compass.plt import CompassPltParser
 
 
 def pltparser(pltfilename):
-    parser = compass.CompassPltParser(pltfilename)
+    parser = CompassPltParser(pltfilename)
     plt = parser.parse()
 
 
