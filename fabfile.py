@@ -23,6 +23,7 @@ def precommit():
     """Run pre-commit unit tests and lint checks."""
     pep8()
     local('pylint -f colorized --errors-only davies')
+    local('2to3 davies')
     test()
 
 

@@ -3,9 +3,16 @@
 Tkinter GUI for editing Compass projects.
 """
 
-from Tkinter import *
-import ttk
-import tkFileDialog
+try:
+    # Python 3
+    from tkinter import *
+    import tkinter.ttk as ttk
+    import tkinter.filedialog as tkFileDialog
+except ImportError as e:
+    # Python 2
+    from Tkinter import *
+    import ttk
+    import tkFileDialog
 
 import sys
 import logging
@@ -98,7 +105,7 @@ class OffsetShotEditor(ttk.Frame):
         prev_station = None
         ro = 0  # row offset
         for i, shot in enumerate(shots[:2*OffsetShotEditor.NUM_SHOTS+1/2]):
-            print shot
+            #print shot
             if prev_station and shot['FROM'] != prev_station:
                 ro += 1
             for var, key in zip(vars, keys):
@@ -167,8 +174,8 @@ class ProjectTreeview(ttk.Treeview):
         self.heading('footage', text='Length')
         self.column('footage', stretch=FALSE, width=100, anchor=E)
         self.heading('comment', text='Comment')
-        self.tag_configure('project', font='* 14 bold')
-        self.tag_configure('datfile', font='* 12 bold')
+        #self.tag_configure('project', font='* 14 bold')  # Python 3
+        #self.tag_configure('datfile', font='* 12 bold')  # Python 3
         self.bind('<<TreeviewSelect>>', self.onTreeSelect)
         #self.tag_bind('survey', '<1>', self.onSelectSurvey)
         self.columnconfigure(0, weight=1)
