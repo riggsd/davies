@@ -10,11 +10,19 @@ from collections import OrderedDict
 
 log = logging.getLogger(__name__)
 
-__all__ = 'Project', 'DatFile', 'Survey', 'Shot', 'UTMLocation', \
+__all__ = 'Project', 'DatFile', 'Survey', 'Shot', 'UTMLocation', 'Exclude', \
           'CompassProjectParser', 'CompassDatParser', 'ParseException'
 
 
 # Compass OO Model
+
+
+class Exclude:
+    """Shot flags"""
+    LENGTH  = 'L'
+    TOTAL   = 'X'
+    CLOSURE = 'C'
+    PLOT    = 'P'
 
 
 class Shot(OrderedDict):
@@ -51,9 +59,22 @@ class Shot(OrderedDict):
         return (inc1 - inc2) / 2.0
 
     @property
+    def flags(self):
+        """Shot exclusion flags as a `set`"""
+        return set(self.get('FLAGS', ''))
+
+    @property
     def length(self):
         """Corrected distance, taking into account tape correction."""
         return self.get('LENGTH', None)
+
+    @property
+    def is_included(self):
+        return Exclude.LENGTH not in self.flags and Exclude.TOTAL not in self.flags
+
+    @property
+    def is_excluded(self):
+        return Exclude.LENGTH in self.flags or Exclude.TOTAL in self.flags
 
 
 class Survey(object):
@@ -77,8 +98,18 @@ class Survey(object):
 
     @property
     def length(self):
-        """Total surveyed length."""
+        """Total surveyed length, regardless of exclusion flags."""
         return sum([shot.length for shot in self.shots])
+
+    @property
+    def included_length(self):
+        """Surveyed length, not including "excluded" shots"""
+        return sum([shot.length for shot in self.shots if Exclude.LENGTH not in shot.flags and Exclude.TOTAL not in shot.flags])
+
+    @property
+    def excluded_length(self):
+        """Surveyed length which does not count toward the included total"""
+        return sum([shot.length for shot in self.shots if Exclude.LENGTH in shot.flags or Exclude.TOTAL in shot.flags])
 
     def __len__(self):
         return len(self.shots)
@@ -114,6 +145,16 @@ class DatFile(object):
     def length(self):
         """Total surveyed length."""
         return sum([survey.length for survey in self.surveys])
+
+    @property
+    def included_length(self):
+        """Surveyed length, not including "excluded" shots"""
+        return sum([survey.included_length for survey in self.surveys])
+
+    @property
+    def excluded_length(self):
+        """Surveyed length which does not count toward the included total"""
+        return sum([survey.excluded_length for survey in self.surveys])
 
     def __len__(self):
         return len(self.surveys)
@@ -263,7 +304,6 @@ class CompassSurveyParser(object):
 
         survey = Survey(name=name, date=date, comment=comment, team=team, cave_name=cave_name, shot_header=shot_header)
 
-        # TODO: for now, let's totally ignore flags and comments
         shots = []
         shot_lines = lines
         for shot_line in shot_lines:
@@ -272,7 +312,7 @@ class CompassSurveyParser(object):
             if len(shot_vals) > len(shot_header) - 2:
                 flags_comment = shot_vals.pop()
                 if not flags_comment.startswith('#|'):
-                    flags, comment = None, flags_comment
+                    flags, comment = '', flags_comment
                 else:
                     try:
                         flags, comment = flags_comment.split('#|', 1)[1].split('#', 1)

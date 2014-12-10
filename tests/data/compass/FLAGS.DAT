@@ -1,0 +1,28 @@
+Memorial Day Cave
+SURVEY NAME: toc
+SURVEY DATE: 12 5 2009  COMMENT:Bolt climb off Columbia Canyon just past Watering Hole (z23 tie-in)
+SURVEY TEAM: 
+John Harman, Brian Masney, David Riggs
+DECLINATION:   -9.04  FORMAT: DDDDUDRLLADB  CORRECTIONS:  0.00 0.00 0.00
+
+        FROM           TO   LENGTH  BEARING      INC     LEFT       UP     DOWN    RIGHT     AZM2     INC2   FLAGS  COMMENTS
+
+         z23         toc0     8.20    71.00    38.00     0.00     0.00     0.00     0.00   253.00   -38.00
+        toc0         toc1    14.10  -999.00    90.00     0.00     0.00     0.00     0.00     0.00  -999.00
+        toc1         toc2    18.50   131.00     0.50     0.00     0.00     0.00     0.00   312.00    -1.00
+        toc2         toc3    16.20   197.00     0.50     0.00     0.00     0.00     0.00    17.00    -1.00
+        toc3         toc4    21.90   163.00    31.50     0.00     0.00     0.00     0.00   345.00   -32.00
+        toc4         toc5    13.20   132.00    11.00     0.00     0.00     0.00     0.00   310.00   -12.00
+        toc5         toc6    10.80    31.50    -4.00     0.00     0.00     0.00     0.00   210.00     3.50
+        toc6         toc7    10.40    74.00     5.00     0.00     0.00     0.00     0.00  -999.00  -999.00
+        toc7        toc7a    65.00  -999.00    90.00     0.00     0.00     0.00     0.00     0.00  -999.00  #|L#  Disto shot up 70' dome
+        toc5         toc8    28.90    83.00    20.00     0.00     0.00     0.00     0.00  -999.00  -999.00  PUD; flowstone choke
+        toc5         toc9     9.90   170.00    43.00     0.00     0.00     0.00     0.00   351.00   -42.00
+        toc9        toc10    15.60   217.00    19.00     0.00     0.00     0.00     0.00    35.50   -20.00
+       toc10        toc11    20.80    98.00    -5.50     0.00     0.00     0.00     0.00  -999.00  -999.00  #|L#
+       toc11       toc11a   165.00  -999.00    90.00     0.00     0.00     0.00     0.00     0.00  -999.00  #|X#  Disto shot up 165+' dome (superceded by wcd survey)
+       toc10        toc12     7.80   304.00     1.00     0.00     0.00     0.00     0.00   125.00    -1.00
+       toc12        toc13     6.90   234.00     5.00     0.00     0.00     0.00     0.00    53.00    -6.00
+       toc13        toc14    13.50   260.00    16.50     0.00     0.00     0.00     0.00  -999.00  -999.00  PUD; flowstone choke
+
+
