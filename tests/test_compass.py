@@ -43,7 +43,6 @@ class CompassParsingTestCase(unittest.TestCase):
         survey = self.bs_survey
         self.assertTrue('Stan Allison' in survey.team)
         self.assertEqual(survey.date, datetime.date(1989, 2, 11))
-        #self.assertEqual(survey.declination, 11.18)  # TODO: implement declination
         self.assertEqual(len(survey), 15)
 
     def test_shot(self):
@@ -55,6 +54,12 @@ class CompassParsingTestCase(unittest.TestCase):
         self.assertEqual(shot['INC'], -23.0)
         self.assertEqual(shot['LEFT'], float('inf'))
         # TODO: this test data doesn't have any COMMENTS
+
+    def test_declination(self):
+        shot = self.last_shot
+        self.assertEqual(shot['BEARING'], 307.0)
+        self.assertEqual(shot.declination, 11.18)
+        self.assertEqual(shot.azm, 307.0 + 11.18)
 
     def test_shot_flags(self):
         self.assertEqual(self.shot_w_flags['FLAGS'], 'P')
