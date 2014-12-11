@@ -175,6 +175,11 @@ class DatFile(object):
                 return survey
         raise KeyError(item)
 
+    @staticmethod
+    def read(fname):
+        """Read a .DAT file and produce a `Survey`"""
+        return CompassDatParser(fname).parse()
+
 
 class UTMLocation(object):
     """Represents a UTM-based coordinate for fixed stations."""
@@ -221,6 +226,11 @@ class Project(object):
             if item == datfile.name or item == datfile:
                 return datfile
         raise KeyError(item)
+
+    @staticmethod
+    def read(fname):
+        """Read a .MAK file and produce a `Project`"""
+        return CompassProjectParser(fname).parse()
 
 
 # File Parsing Utilities

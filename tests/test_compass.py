@@ -19,8 +19,7 @@ class CompassParsingTestCase(unittest.TestCase):
     """Parse the sample Compass data and test based on its known values"""
 
     def setUp(self):
-        makparser = CompassProjectParser(TESTFILE)
-        self.project = makparser.parse()
+        self.project = Project.read(TESTFILE)
         self.assertTrue(self.project.linked_files, 'Sanity check failed: no linked_files found!')
         self.cave_survey_dat = self.project.linked_files[0]
         self.bs_survey = self.cave_survey_dat['BS']
@@ -70,7 +69,7 @@ class CompassSpecialCharacters(unittest.TestCase):
 
     def runTest(self):
         fname = os.path.join(DATA_DIR, 'unicode.dat')
-        dat = CompassDatParser(fname).parse()
+        dat = DatFile.read(fname)
         for name in dat.surveys[0].team:
             if name.startswith('Tanya'):
                 self.assertEqual(name, u'Tanya Pietra\xdf')
@@ -95,7 +94,7 @@ class CompassShotFlags(unittest.TestCase):
 
     def setUp(self):
         fname = os.path.join(DATA_DIR, 'FLAGS.DAT')
-        dat = CompassDatParser(fname).parse()
+        dat = DatFile.read(fname)
         self.survey = dat['toc']
 
     def test_comment(self):
@@ -139,4 +138,4 @@ class OldData(unittest.TestCase):
 
     def test_old(self):
         fname = os.path.join(DATA_DIR, '1998.DAT')
-        dat = CompassDatParser(fname).parse()
+        dat = DatFile.read(fname)
