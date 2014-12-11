@@ -19,7 +19,7 @@ Example usage::
   from davies import compass
 
   # Parse a .DAT file
-  datfile = DatFile.read('MYCAVE.DAT')
+  datfile = compass.DatFile.read('MYCAVE.DAT')
 
   print len(datfile)  # number of surveys in .DAT
   >> 17
@@ -58,7 +58,7 @@ This example shows who has surveyed the most footage in your project::
     cavers = {}
 
     for datfilename in sys.argv[1:]:
-        for survey in DatFile.read(datfilename):
+        for survey in compass.DatFile.read(datfilename):
             for member in survey.team:
                 cavers[member] = cavers.get(member, 0.0) + survey.length
 
