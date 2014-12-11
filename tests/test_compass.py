@@ -1,23 +1,25 @@
 import unittest
 import datetime
+import os.path
 
 from davies.compass import *
 
+
+DATA_DIR = 'tests/data/compass'
 
 # Example Compass Project with:
 # - NAD83 UTM Zone 13 base location
 # - Two imported Data Files
 #   - One with 25 cave surveys, four fixed stations
 #   - One with 4 surface surveys
-TESTFILE = 'tests/data/compass/FULFORDS.MAK'
+TESTFILE = os.path.join(DATA_DIR, 'FULFORDS.MAK')
 
 
 class CompassParsingTestCase(unittest.TestCase):
     """Parse the sample Compass data and test based on its known values"""
 
     def setUp(self):
-        makparser = CompassProjectParser(TESTFILE)
-        self.project = makparser.parse()
+        self.project = Project.read(TESTFILE)
         self.assertTrue(self.project.linked_files, 'Sanity check failed: no linked_files found!')
         self.cave_survey_dat = self.project.linked_files[0]
         self.bs_survey = self.cave_survey_dat['BS']
@@ -40,7 +42,6 @@ class CompassParsingTestCase(unittest.TestCase):
         survey = self.bs_survey
         self.assertTrue('Stan Allison' in survey.team)
         self.assertEqual(survey.date, datetime.date(1989, 2, 11))
-        #self.assertEqual(survey.declination, 11.18)  # TODO: implement declination
         self.assertEqual(len(survey), 15)
 
     def test_shot(self):
@@ -53,6 +54,12 @@ class CompassParsingTestCase(unittest.TestCase):
         self.assertEqual(shot['LEFT'], float('inf'))
         # TODO: this test data doesn't have any COMMENTS
 
+    def test_declination(self):
+        shot = self.last_shot
+        self.assertEqual(shot['BEARING'], 307.0)
+        self.assertEqual(shot.declination, 11.18)
+        self.assertEqual(shot.azm, 307.0 + 11.18)
+
     def test_shot_flags(self):
         self.assertEqual(self.shot_w_flags['FLAGS'], 'P')
         self.assertTrue(Exclude.PLOT in self.shot_w_flags.flags)
@@ -61,7 +68,8 @@ class CompassParsingTestCase(unittest.TestCase):
 class CompassSpecialCharacters(unittest.TestCase):
 
     def runTest(self):
-        dat = CompassDatParser('tests/data/compass/unicode.dat').parse()
+        fname = os.path.join(DATA_DIR, 'unicode.dat')
+        dat = DatFile.read(fname)
         for name in dat.surveys[0].team:
             if name.startswith('Tanya'):
                 self.assertEqual(name, u'Tanya Pietra\xdf')
@@ -85,7 +93,8 @@ class CompassShotCorrection(unittest.TestCase):
 class CompassShotFlags(unittest.TestCase):
 
     def setUp(self):
-        dat = CompassDatParser('tests/data/compass/FLAGS.DAT').parse()
+        fname = os.path.join(DATA_DIR, 'FLAGS.DAT')
+        dat = DatFile.read(fname)
         self.survey = dat['toc']
 
     def test_comment(self):
@@ -123,3 +132,10 @@ class CompassShotFlags(unittest.TestCase):
         self.assertEqual(self.survey.length, survey_len)
         self.assertEqual(self.survey.included_length, included_len)
         self.assertEqual(self.survey.excluded_length, excluded_len)
+
+
+class OldData(unittest.TestCase):
+
+    def test_old(self):
+        fname = os.path.join(DATA_DIR, '1998.DAT')
+        dat = DatFile.read(fname)

@@ -19,13 +19,18 @@ Example usage::
   from davies import compass
 
   # Parse a .DAT file
-  parser = compass.CompassDatParser('mycave.dat')
-  surveys = parser.parse()
+  datfile = DatFile.read('MYCAVE.DAT')
 
-  print len(surveys)
+  print len(datfile)  # number of surveys in .DAT
   >> 17
 
-  survey = surveys[0]
+  print datfile.length  # total surveyed footage including splays, etc.
+  >> 5332.2
+
+  print datfile.included_length  # total surveyed footage after discarding excluded shots
+  >> 5280.0
+
+  survey = datfile['BS']  # grab a survey by its survey designation
 
   print survey.name
   >> A
@@ -33,21 +38,27 @@ Example usage::
   print survey.date
   >> 2006-09-30
 
+  print survey.length  # surveyed footage including splays, etc.
+  >> 5332.2
+
+  print survey.included_length  # surveyed footage after discarding excluded shots
+  >> 5280.0
+
   print survey.shots[0]
   >> {'FROM': 'A1', 'TO': 'A2', 'LENGTH': 16.8, 'BEARING': 158.0, 'INC': -30.0, 'LEFT': 12.0, 'RIGHT': 15.0, 'UP': 15.0, 'DOWN': 20.0 }
 
-  print survey.length
-  >> 384.7
+  print survey.shots[0].azm  # azimuth after averaging front and backsights, magnetic declination
+  155.2
 
 
-Or a more useful example, which shows who has surveyed the most footage in your project::
+This example shows who has surveyed the most footage in your project::
 
     from davies import compass
 
     cavers = {}
 
-    for datfile in sys.argv[1:]:
-        for survey in compass.CompassDatParser(datfile).parse():
+    for datfilename in sys.argv[1:]:
+        for survey in DatFile.read(datfilename):
             for member in survey.team:
                 cavers[member] = cavers.get(member, 0.0) + survey.length
 

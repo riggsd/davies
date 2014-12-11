@@ -61,7 +61,7 @@ class Shot(OrderedDict):
     @property
     def flags(self):
         """Shot exclusion flags as a `set`"""
-        return set(self.get('FLAGS', ''))
+        return set(self.get('FLAGS', ''))  # older data may not have FLAGS field
 
     @property
     def length(self):
@@ -175,6 +175,11 @@ class DatFile(object):
                 return survey
         raise KeyError(item)
 
+    @staticmethod
+    def read(fname):
+        """Read a .DAT file and produce a `Survey`"""
+        return CompassDatParser(fname).parse()
+
 
 class UTMLocation(object):
     """Represents a UTM-based coordinate for fixed stations."""
@@ -221,6 +226,11 @@ class Project(object):
             if item == datfile.name or item == datfile:
                 return datfile
         raise KeyError(item)
+
+    @staticmethod
+    def read(fname):
+        """Read a .MAK file and produce a `Project`"""
+        return CompassProjectParser(fname).parse()
 
 
 # File Parsing Utilities
@@ -271,6 +281,19 @@ class CompassSurveyParser(object):
                 pass
         raise ParseException("Unable to parse SURVEY DATE: %s" % datestr)
 
+    @staticmethod
+    def _parse_declination_line(line):
+        declination, fmt, corrections = 0.0, '', (0.0, 0.0, 0.0)
+        toks = line.strip().split()
+        for i, tok in enumerate(toks):
+            if tok == 'DECLINATION:':
+                declination = float(toks[i+1])
+            elif tok == 'FORMAT:':
+                fmt = toks[i+1]
+            elif tok == 'CORRECTIONS:':
+                corrections = tuple(toks[i+1:])  # does this work for new back-correction?
+        return declination, fmt, corrections
+
     def parse(self):
         """Parse our string and return a Survey object, None, or raise :exc:`ParseException`"""
         if not self.survey_str:
@@ -293,23 +316,26 @@ class CompassSurveyParser(object):
         date = CompassSurveyParser._parse_date(date_comment_toks[0])
         comment = date_comment_toks[1].strip() if len(date_comment_toks) > 1 else ''
 
-        lines.pop(0)  # SURVEY TEAM:\n
+        lines.pop(0)  # SURVEY TEAM:\n (actual team members are on the next line)
         team = [member.strip() for member in lines.pop(0).split(',')]  # We're already decoding from windows-1252 codec so we have unicode for names like 'Tanya Pietra\xdf'
 
-        dec_fmt_corr = lines.pop(0)  # TODO: implement declination, format, instrument correction(s)
+        # TODO: implement format (units!), instrument correction(s)
+        dec_fmt_corr = lines.pop(0)
+        declination, fmt, corrections = CompassSurveyParser._parse_declination_line(dec_fmt_corr)
 
         lines.pop(0)
         shot_header = lines.pop(0).split()
+        val_count = len(shot_header) - 2 if 'FLAGS' in shot_header else len(shot_header)  # 1998 vintage data has no FLAGS, COMMENTS at end
         lines.pop(0)
 
-        survey = Survey(name=name, date=date, comment=comment, team=team, cave_name=cave_name, shot_header=shot_header)
+        survey = Survey(name=name, date=date, comment=comment, team=team, cave_name=cave_name, shot_header=shot_header, declination=declination)
 
         shots = []
         shot_lines = lines
         for shot_line in shot_lines:
-            shot_vals = shot_line.split(None, len(shot_header) - 2)  # last two columns are FLAGS and COMMENTS, either one may be missing
+            shot_vals = shot_line.split(None, val_count)
 
-            if len(shot_vals) > len(shot_header) - 2:
+            if len(shot_vals) > val_count:  # last two spare columns are FLAGS and COMMENTS, either value may be missing
                 flags_comment = shot_vals.pop()
                 if not flags_comment.startswith('#|'):
                     flags, comment = '', flags_comment
@@ -320,7 +346,8 @@ class CompassSurveyParser(object):
                         raise ParseException('Invalid flags in %s survey: %s' % (name, flags_comment))  # A 2013 bug in Compass inserted corrupt binary garbage into FLAGS column, causes parse to barf
                 shot_vals += [flags, comment.strip()]
 
-            shot = Shot([(header, self._coerce(header, val)) for (header, val) in zip(shot_header, shot_vals)])
+            shot_vals = [(header, self._coerce(header, val)) for (header, val) in zip(shot_header, shot_vals)]
+            shot = Shot(shot_vals, declination=declination)
             survey.add_shot(shot)
 
         log.debug("Survey: name=%s shots=%d length=%0.1f date=%s team=%s\n%s", name, len(shots), survey.length, date, team, '\n'.join([str(shot) for shot in survey.shots]))
