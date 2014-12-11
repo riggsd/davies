@@ -61,7 +61,7 @@ class Shot(OrderedDict):
     @property
     def flags(self):
         """Shot exclusion flags as a `set`"""
-        return set(self.get('FLAGS', ''))
+        return set(self.get('FLAGS', ''))  # older data may not have FLAGS field
 
     @property
     def length(self):
@@ -293,13 +293,14 @@ class CompassSurveyParser(object):
         date = CompassSurveyParser._parse_date(date_comment_toks[0])
         comment = date_comment_toks[1].strip() if len(date_comment_toks) > 1 else ''
 
-        lines.pop(0)  # SURVEY TEAM:\n
+        lines.pop(0)  # SURVEY TEAM:\n (actual team members are on the next line)
         team = [member.strip() for member in lines.pop(0).split(',')]  # We're already decoding from windows-1252 codec so we have unicode for names like 'Tanya Pietra\xdf'
 
         dec_fmt_corr = lines.pop(0)  # TODO: implement declination, format, instrument correction(s)
 
         lines.pop(0)
         shot_header = lines.pop(0).split()
+        val_count = len(shot_header) - 2 if 'FLAGS' in shot_header else len(shot_header)  # 1998 vintage data has no FLAGS, COMMENTS at end
         lines.pop(0)
 
         survey = Survey(name=name, date=date, comment=comment, team=team, cave_name=cave_name, shot_header=shot_header)
@@ -307,9 +308,9 @@ class CompassSurveyParser(object):
         shots = []
         shot_lines = lines
         for shot_line in shot_lines:
-            shot_vals = shot_line.split(None, len(shot_header) - 2)  # last two columns are FLAGS and COMMENTS, either one may be missing
+            shot_vals = shot_line.split(None, val_count)
 
-            if len(shot_vals) > len(shot_header) - 2:
+            if len(shot_vals) > val_count:  # last two spare columns are FLAGS and COMMENTS, either value may be missing
                 flags_comment = shot_vals.pop()
                 if not flags_comment.startswith('#|'):
                     flags, comment = '', flags_comment

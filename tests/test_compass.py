@@ -1,15 +1,18 @@
 import unittest
 import datetime
+import os.path
 
 from davies.compass import *
 
+
+DATA_DIR = 'tests/data/compass'
 
 # Example Compass Project with:
 # - NAD83 UTM Zone 13 base location
 # - Two imported Data Files
 #   - One with 25 cave surveys, four fixed stations
 #   - One with 4 surface surveys
-TESTFILE = 'tests/data/compass/FULFORDS.MAK'
+TESTFILE = os.path.join(DATA_DIR, 'FULFORDS.MAK')
 
 
 class CompassParsingTestCase(unittest.TestCase):
@@ -61,7 +64,8 @@ class CompassParsingTestCase(unittest.TestCase):
 class CompassSpecialCharacters(unittest.TestCase):
 
     def runTest(self):
-        dat = CompassDatParser('tests/data/compass/unicode.dat').parse()
+        fname = os.path.join(DATA_DIR, 'unicode.dat')
+        dat = CompassDatParser(fname).parse()
         for name in dat.surveys[0].team:
             if name.startswith('Tanya'):
                 self.assertEqual(name, u'Tanya Pietra\xdf')
@@ -85,7 +89,8 @@ class CompassShotCorrection(unittest.TestCase):
 class CompassShotFlags(unittest.TestCase):
 
     def setUp(self):
-        dat = CompassDatParser('tests/data/compass/FLAGS.DAT').parse()
+        fname = os.path.join(DATA_DIR, 'FLAGS.DAT')
+        dat = CompassDatParser(fname).parse()
         self.survey = dat['toc']
 
     def test_comment(self):
@@ -123,3 +128,10 @@ class CompassShotFlags(unittest.TestCase):
         self.assertEqual(self.survey.length, survey_len)
         self.assertEqual(self.survey.included_length, included_len)
         self.assertEqual(self.survey.excluded_length, excluded_len)
+
+
+class OldData(unittest.TestCase):
+
+    def test_old(self):
+        fname = os.path.join(DATA_DIR, '1998.DAT')
+        dat = CompassDatParser(fname).parse()
