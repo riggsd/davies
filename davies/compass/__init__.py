@@ -86,8 +86,8 @@ class Survey(object):
         self.comment = comment
         self.team = team
         self.declination = declination
-        self.lrud_format = lrud_format
-        self.corrections = corrections
+        self.lrud_format = lrud_format  # TODO: LRUD and units not supported
+        self.corrections = corrections  # TODO: instrument corrections not supported
         self.cave_name = cave_name
         self.shot_header = shot_header
         self.shots = shots if shots else []
@@ -123,6 +123,40 @@ class Survey(object):
             if item in (shot.get('FROM', None), shot.get('TO', None)):
                 return True
         return False
+
+    def _serialize(self):
+        lines = [
+            self.cave_name,
+            'SURVEY NAME: %s' % self.name,
+            'SURVEY DATE: %s  COMMENT:%s' % (self.date.strftime('%m %d %Y'), self.comment),
+            'SURVEY TEAM:',
+            ','.join(self.team),
+            'DECLINATION: %7.2f  FORMAT: %s  CORRECTIONS:  %.2f %.2f %.2f' % (self.declination, self.lrud_format, 0, 0, 0),  # TODO: corrections
+            '',
+            '\t'.join(self.shot_header),
+            '',
+        ]
+        for shot in self.shots:
+            vals = []
+            for k,v in shot.items():
+                if k in ('BEARING', 'INC', 'AZM2', 'INC2', 'LENGTH'):
+                    vals.append('%7.2f' % (v if v is not None else -999.0))
+                elif k in ('LEFT', 'RIGHT', 'UP', 'DOWN'):
+                    vals.append('%7.2f' % (v if v is not None and v != float('inf') else -9.90))
+                elif k in ('FROM', 'TO'):
+                    vals.append(v.rjust(6))
+                elif k in ('FLAGS', 'COMMENTS'):
+                    pass  # handle them together below
+                else:
+                    vals.append(str(v))
+
+            if shot.get('FLAGS', ''):
+                vals.append('#|%s#  %s' % (''.join(list(shot['FLAGS'])), shot.get('COMMENTS', '')))
+            else:
+                vals.append(shot.get('COMMENTS', ''))
+
+            lines.append('\t'.join(vals))
+        return lines
 
 
 class DatFile(object):
@@ -180,6 +214,14 @@ class DatFile(object):
         """Read a .DAT file and produce a `Survey`"""
         return CompassDatParser(fname).parse()
 
+    def write(self, outf):
+        """Write a `Survey` to the specified .DAT file"""
+        with codecs.open(outf, 'wb', 'windows-1252') as outf:
+            for survey in self.surveys:
+                outf.write('\r\n'.join(survey._serialize()))
+                outf.write('\r\n'+'\f'+'\r\n')  # ASCII "form feed" ^L
+            outf.write('\x1A')  # ASCII "sub" ^Z marks EOF
+
 
 class UTMLocation(object):
     """Represents a UTM-based coordinate for fixed stations."""
@@ -232,8 +274,16 @@ class Project(object):
         """Read a .MAK file and produce a `Project`"""
         return CompassProjectParser(fname).parse()
 
+    def write(self, outf):
+        raise NotImplementedError()
+
+
 
 # File Parsing Utilities
+
+
+_FLOAT_KEYS = ['LENGTH', 'BEARING', 'AZM2', 'INC', 'INC2', 'LEFT', 'RIGHT', 'UP', 'DOWN']
+_INF_KEYS = ['LEFT', 'RIGHT', 'UP', 'DOWN']
 
 
 def name_from_filename(fname):
@@ -252,18 +302,15 @@ class CompassSurveyParser(object):
         """:param survey_str: string multiline representation of survey as found in .DAT file"""
         self.survey_str = survey_str
 
-    _FLOAT_KEYS = ['LENGTH', 'BEARING', 'AZM2', 'INC', 'INC2', 'LEFT', 'RIGHT', 'UP', 'DOWN']
-    _INF_KEYS = ['LEFT', 'RIGHT', 'UP', 'DOWN']
-
     @staticmethod
     def _coerce(key, val):
         if val == '-999.00':  # no data
             return None
 
-        if key in CompassSurveyParser._INF_KEYS and val in ('-9.90', '-9999.00'):  # passage
+        if key in _INF_KEYS and val in ('-9.90', '-9999.00'):  # passage
             return float('inf')
 
-        if key in CompassSurveyParser._FLOAT_KEYS:
+        if key in _FLOAT_KEYS:
             try:
                 return float(val)
             except TypeError as e:
