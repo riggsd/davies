@@ -1,9 +1,10 @@
-#!/usr/bin/env ipython
+#!/usr/bin/env python
 # See: https://github.com/wxWidgets/wxPython/blob/master/demo/DVC_DataViewModel.py
 
 import sys
 
 import wx
+import wx.grid as grid
 import wx.dataview as dv
 
 from davies import compass

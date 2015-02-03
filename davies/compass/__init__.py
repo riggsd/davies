@@ -397,7 +397,7 @@ class CompassSurveyParser(object):
             shot = Shot(shot_vals, declination=declination)
             survey.add_shot(shot)
 
-        log.debug("Survey: name=%s shots=%d length=%0.1f date=%s team=%s\n%s", name, len(shots), survey.length, date, team, '\n'.join([str(shot) for shot in survey.shots]))
+        #log.debug("Survey: name=%s shots=%d length=%0.1f date=%s team=%s\n%s", name, len(shots), survey.length, date, team, '\n'.join([str(shot) for shot in survey.shots]))
 
         return survey
 
