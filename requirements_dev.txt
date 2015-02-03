@@ -1,3 +1,5 @@
-pep8==1.4
-pylint==1.1
+pep8
+pylint
 Sphinx
+docutils
+Jinja2

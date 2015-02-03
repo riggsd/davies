@@ -11,7 +11,12 @@ Current support includes:
  - Parsing of `Compass <http://www.fountainware.com/compass/>`_ Project (.MAK) and Data (.DAT) source files, as well as
    Plot (.PLT) files.
 
+ - Writing Compass Data (.DAT) files.
+
  - That's it!
+
+
+Browse the `Davies API documentation  <http://davies.readthedocs.org>`_
 
 
 Example usage::
@@ -19,7 +24,7 @@ Example usage::
   from davies import compass
 
   # Parse a .DAT file
-  datfile = DatFile.read('MYCAVE.DAT')
+  datfile = compass.DatFile.read('MYCAVE.DAT')
 
   print len(datfile)  # number of surveys in .DAT
   >> 17
@@ -58,7 +63,7 @@ This example shows who has surveyed the most footage in your project::
     cavers = {}
 
     for datfilename in sys.argv[1:]:
-        for survey in DatFile.read(datfilename):
+        for survey in compass.DatFile.read(datfilename):
             for member in survey.team:
                 cavers[member] = cavers.get(member, 0.0) + survey.length
 
@@ -96,4 +101,4 @@ still serves as an inspiration today to the cave mappers of West Virginia, of th
 License
 -------
 
-Davies is Open Source software licensed under the MIT License, and is copyright (C) 2013 - 2014 Myotisoft LLC.
+Davies is Open Source software licensed under the MIT License, and is copyright (C) 2013 - 2015 Myotisoft LLC.
