@@ -11,7 +11,12 @@ Current support includes:
  - Parsing of `Compass <http://www.fountainware.com/compass/>`_ Project (.MAK) and Data (.DAT) source files, as well as
    Plot (.PLT) files.
 
+ - Writing Compass Data (.DAT) files.
+
  - That's it!
+
+
+Browse the `Davies API documentation  <http://davies.readthedocs.org>`_
 
 
 Example usage::
@@ -96,4 +101,4 @@ still serves as an inspiration today to the cave mappers of West Virginia, of th
 License
 -------
 
-Davies is Open Source software licensed under the MIT License, and is copyright (C) 2013 - 2014 Myotisoft LLC.
+Davies is Open Source software licensed under the MIT License, and is copyright (C) 2013 - 2015 Myotisoft LLC.
