@@ -3,13 +3,14 @@ davies.pockettopo: Module for parsing and working with exported PocketTopo surve
 """
 
 import re
-import sys
 import codecs
 import logging
 from datetime import datetime
 from collections import OrderedDict
 
 log = logging.getLogger(__name__)
+
+__all__ = 'TxtFile', 'Survey', 'Shot', 'PocketTopoTxtParser'
 
 
 # TODO: optionally combine triple-shots and backsights
@@ -22,14 +23,14 @@ class Shot(OrderedDict):
     """
     Representation of a single shot in a PocketTopo Survey.
 
-    :kwarg FROM:
-    :kwarg TO:
-    :kwarg LENGTH:
-    :kwarg AZM:
-    :kwarg INC:
-    :kwarg declination:
+    :kwarg FROM: (str)
+    :kwarg TO: (str) optional
+    :kwarg LENGTH: (float)
+    :kwarg AZM: (float)
+    :kwarg INC: (float)
+    :kwarg declination: (float) optional
 
-    :ivar declination:
+    :ivar declination: (float) set or get the applied magnetic declination for the shot
     """
 
     def __init__(self, *args, **kwargs):
@@ -48,13 +49,19 @@ class Shot(OrderedDict):
 
     @property
     def length(self):
-        """Corrected distance, taking into account tape correction."""
+        """Corrected distance."""
         return self.get('LENGTH', -0.0)
 
     @property
     def is_splay(self):
         """Is this shot a "splay shot"?"""
         return self.get('TO', None) in (None, '')
+
+    def __str__(self):
+        return ', '.join('%s=%s' % (k,v) for (k,v) in self.items())
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self)
 
 
 class Survey(object):
@@ -69,13 +76,19 @@ class Survey(object):
         self.shots = shots if shots else []
 
     def add_shot(self, shot):
-        """Add a shot dictionary to :attr:`shots`."""
+        """Add a shot dictionary to :attr:`shots`, applying our survey's :attr:`declination` to it."""
+        shot.declination = self.declination
         self.shots.append(shot)
 
     @property
     def length(self):
-        """Total surveyed length, not including splays."""
+        """Total surveyed cave length, not including splays."""
         return sum([shot.length for shot in self.shots if not shot.is_splay])
+
+    @property
+    def total_length(self):
+        """Total surveyed length including splays."""
+        return sum([shot.length for shot in self.shots])
 
     def __len__(self):
         return len(self.shots)
@@ -90,6 +103,12 @@ class Survey(object):
                 return True
         return False
 
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self.name)
+
     # def _serialize(self):
     #     return []
 
@@ -98,16 +117,22 @@ class TxtFile(object):
     """
     Representation of a PocketTopo .TXT File. A TxtFile is a container for :class:`Survey` objects.
 
-    :ivar name:    (string) the TxtFile's "name"
-    :ivar length_units: (string) `meters` (default) or `feet`
-    :ivar angle_units: (int) `360` for degrees (default) or `400` for grads
-    :ivar surveys: (list of :class:`Survey`)
+    :ivar name:          (string) the TxtFile's "name"
+    :ivar length_units:  (string) `m` (default) or `feet`
+    :ivar angle_units:   (int) `360` for degrees (default) or `400` for grads
+    :ivar surveys:       (list of :class:`Survey`)
     """
 
-    def __init__(self, name=None, length_units='meters', angle_units=360):
+    def __init__(self, name=None, length_units='m', angle_units=360):
         self.name = name
+
+        if length_units not in ('m', 'feet'):
+            raise Exception('Length units must be either \'m\' for meters (default) or \'feet\' for feet')
         self.length_units = length_units
-        self.angle_units = angle_units
+
+        if angle_units not in (360, '360', 400, '400'):
+            raise Exception('Angle units must be either `360` for degrees (default) or `400` for grads')
+        self.angle_units = int(angle_units)
 
         self.surveys = []
 
@@ -141,7 +166,7 @@ class TxtFile(object):
 
     @staticmethod
     def read(fname):
-        """Read a .DAT file and produce a `Survey`"""
+        """Read a PocketTopo .TXT file and produce a `TxtFile` object which represents it"""
         return PocketTopoTxtParser(fname).parse()
 
     # def write(self, outf):
@@ -149,16 +174,16 @@ class TxtFile(object):
     #     with codecs.open(outf, 'wb', 'windows-1252') as outf:
     #         for survey in self.surveys:
     #             outf.write('\r\n'.join(survey._serialize()))
-    #             outf.write('\r\n'+'\f'+'\r\n')  # ASCII "form feed" ^L
-    #         outf.write('\x1A')  # ASCII "sub" ^Z marks EOF
 
 
 class PocketTopoTxtParser(object):
+    """Parses the PocketTopo .TXT file format"""
 
     def __init__(self, txtfilename):
         self.txtfilename = txtfilename
 
     def parse(self):
+        """Produce a `TxtFile` object from the .TXT file"""
         log.debug('Parsing PocketTopo .TXT file %s ...', self.txtfilename)
         txtobj = None
 
@@ -210,24 +235,24 @@ class PocketTopoTxtParser(object):
                 from_to, (length, azm, inc) = toks[:-3], (float(tok) for tok in toks[-3:])
 
                 if len(from_to) == 2:
-                    # shot
-                    from_, to = tuple(from_to)
+                    from_, to = tuple(from_to)  # shot
                 elif len(from_to) == 1:
-                    # splay
-                    from_, to = from_to[0], None
+                    from_, to = from_to[0], None  # splay
                 elif not from_to and length == 0.0:
                     continue  # skip junk zero-length placeholder shots
                 else:
                     raise Exception()
 
-                shot = Shot(FROM=from_, TO=to, LENGTH=length, AZM=azm, INC=inc, COMMENT=comment, declination=declination)
+                shot = Shot([('FROM',from_), ('TO',to), ('LENGTH',length), ('AZM',azm), ('INC',inc), ('COMMENT',comment)])
                 txtobj[survey_id].add_shot(shot)
 
         return txtobj
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    import sys
+
+    #logging.basicConfig(level=logging.DEBUG)
 
     for fname in sys.argv[1:]:
         txtfile = PocketTopoTxtParser(fname).parse()
