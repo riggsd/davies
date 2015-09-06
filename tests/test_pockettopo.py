@@ -33,6 +33,13 @@ class PocketTopoTxtParseTestCase(unittest.TestCase):
     def test_txt_getitem(self):
         self.assertTrue(self.txtfile['1'])
 
+    def test_reference_point(self):
+        self.assertEqual(len(self.txtfile.reference_points), 1)
+        self.assertTrue('1.0' in self.txtfile.reference_points)
+        point = self.txtfile.reference_points['1.0']
+        self.assertEqual(point.northing, 5189999.0)
+        self.assertTrue(point.comment)
+
     def test_survey_getitem(self):
         survey = self.txtfile['1']
         self.assertTrue('1.0' in survey)
@@ -40,5 +47,5 @@ class PocketTopoTxtParseTestCase(unittest.TestCase):
     def test_survey_date(self):
         survey = self.txtfile['1']
         self.assertEqual(survey.date, date(2015, 6, 22))
-    
+
     # TODO: ...

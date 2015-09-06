@@ -14,9 +14,8 @@ __all__ = 'TxtFile', 'Survey', 'Shot', 'PocketTopoTxtParser'
 
 
 # TODO: optionally combine triple-shots and backsights
-# TODO: properly handle zero-length shots with from/to, which define station equivalence
-# TODO: handle fixed stations / reference points
-# TODO: older versions didn't specify units
+# TODO: properly handle zero-length shots with both from/to (station equivalence)
+# TODO: older versions didn't specify units?
 
 
 class Shot(OrderedDict):
@@ -113,6 +112,33 @@ class Survey(object):
     #     return []
 
 
+class UTMLocation(object):
+    """
+    Represents a UTM-based coordinate for Reference Point.
+
+    Note that PocketTopo doesn't support UTM Zones.
+
+    :ivar easting:    (float)
+    :ivar northing:   (float)
+    :ivar elevation:  (float) meters
+    :ivar comment:    (str)
+    """
+
+    def __init__(self, easting, northing, elevation=0.0, comment=None):
+        self.easting = easting
+        self.northing = northing
+        self.elevation = elevation
+        self.altitude = elevation  # alias
+        self.comment = comment
+
+    @property
+    def __geo_interface__(self):
+        return {'type': 'Point', 'coordinates': (self.easting, self.northing, self.elevation)}
+
+    def __str__(self):
+        return "<UTM %0.1fE %0.1fN %0.1fm>" % (self.easting, self.northing, self.elevation)
+
+
 class TxtFile(object):
     """
     Representation of a PocketTopo .TXT File. A TxtFile is a container for :class:`Survey` objects.
@@ -121,6 +147,7 @@ class TxtFile(object):
     :ivar length_units:  (string) `m` (default) or `feet`
     :ivar angle_units:   (int) `360` for degrees (default) or `400` for grads
     :ivar surveys:       (list of :class:`Survey`)
+    :ivar reference_points:  (dict of :class:`UTMLocation` by station)
     """
 
     def __init__(self, name=None, length_units='m', angle_units=360):
@@ -135,10 +162,15 @@ class TxtFile(object):
         self.angle_units = int(angle_units)
 
         self.surveys = []
+        self.reference_points = OrderedDict()
 
     def add_survey(self, survey):
         """Add a :class:`Survey` to :attr:`surveys`."""
         self.surveys.append(survey)
+
+    def add_reference_point(self, station, utm_location):
+        """Add a :class:`UTMLocation` to :attr:`reference_points`."""
+        self.reference_points[station] = utm_location
 
     @property
     def length(self):
@@ -227,7 +259,20 @@ class PocketTopoTxtParser(object):
                     comment = None
 
                 if '[' not in line:
-                    continue  # junk zero-length shots, skip?
+                    # this is either a Reference Point or a zero-length fake shot
+                    toks = line.split()
+                    if len(toks) != 4:  # ??
+                        log.debug('Skipping unrecognized shot:  %s %s', line, '"%s"' % comment if comment else '')
+                        continue
+                    station, vals = toks[0], map(float, toks[1:])
+                    if vals[0] == 0.0:  # fake shot
+                        log.debug('Skipping zero-length shot:  %s %s', line, '"%s"' % comment if comment else '')
+                    else:  # reference point
+                        easting, northing, altitude = vals
+                        reference_point = UTMLocation(easting, northing, altitude, comment)
+                        log.debug('Reference point:  %s', reference_point)
+                        txtobj.add_reference_point(station, reference_point)
+                    continue
 
                 line, survey_id = line.split('[')
                 survey_id = survey_id.rstrip().rstrip(']')
@@ -252,7 +297,7 @@ class PocketTopoTxtParser(object):
 if __name__ == '__main__':
     import sys
 
-    #logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.DEBUG)
 
     for fname in sys.argv[1:]:
         txtfile = PocketTopoTxtParser(fname).parse()
