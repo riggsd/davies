@@ -10,7 +10,7 @@ from collections import OrderedDict
 
 log = logging.getLogger(__name__)
 
-__all__ = 'TxtFile', 'Survey', 'Shot', 'PocketTopoTxtParser'
+__all__ = 'TxtFile', 'Survey', 'MergingSurvey', 'Shot', 'PocketTopoTxtParser'
 
 
 # TODO: optionally combine triple-shots and backsights
@@ -36,6 +36,8 @@ class Shot(OrderedDict):
     def __init__(self, *args, **kwargs):
         self.declination = kwargs.pop('declination', 0.0)
         OrderedDict.__init__(self, *args, **kwargs)
+
+        self.dupe_count = 1  # denotes averaged backsights (2) and triple-shots (3)
 
     @property
     def azm(self):
@@ -111,6 +113,50 @@ class Survey(object):
 
     # def _serialize(self):
     #     return []
+
+
+class MergingSurvey(Survey):
+    """
+    Survey implementation which merges "duplicate" shots into a single averaged shot.
+
+    PocketTopo (and DistoX) convention is to use triple forward shots for mainline survey. When
+    adding a new shot to this class with `add_shot()`, if we detect that the previous shot was
+    between the same two stations, we average values and merge the two together instead of appending
+    the duplicate shot. We use a "running" mean algorithm, so that this feature works for any number
+    of subsequent duplicate shots (two, three, four...).
+    """
+
+    def add_shot(self, shot):
+        """
+        Add a shot dictionary to :attr:`shots`, applying our survey's :attr:`declination`, and
+        optionally averaging and merging with duplicate previous shot.
+        """
+        shot.declination = self.declination
+
+        if not self.shots or not shot.get('TO', None) or not self.shots[-1].get('TO', None):
+            self.shots.append(shot)
+            return
+
+        from_, to = shot['FROM'], shot['TO']
+        prev_shot = self.shots[-1]
+        prev_from, prev_to = prev_shot['FROM'], prev_shot['TO']
+        if from_ == prev_from and to == prev_to:
+            # dupe shot! calculate iterative "running" mean and merge into the previous shot
+            total_count = prev_shot.dupe_count + 1
+            log.debug('Merging %d shots "%s" <- "%s"', total_count, prev_shot, shot)
+            avg_length = (prev_shot['LENGTH'] * prev_shot.dupe_count + shot['LENGTH']) / total_count
+            avg_azm = (prev_shot['AZM'] * prev_shot.dupe_count + shot['AZM']) / total_count
+            avg_inc = (prev_shot['INC'] * prev_shot.dupe_count + shot['INC']) / total_count
+            merged_comments = ('%s %s' % (prev_shot.get('COMMENT', '') or '', shot.get('COMMENT', '') or '')).strip() or None
+            prev_shot['LENGTH'], prev_shot['AZM'], prev_shot['INC'], prev_shot['COMMENT'] = avg_length, avg_azm, avg_inc, merged_comments
+            prev_shot.dupe_count += 1
+        elif from_ == prev_to and to == prev_from:
+            # backsight!
+            log.debug('Not merging backsight "%s" <- "%s" TODO!', prev_shot, shot)
+            self.shots.append(shot)  # TODO: implement backsights
+        else:
+            # a new, different shot; no merge
+            self.shots.append(shot)
 
 
 class UTMLocation(object):
@@ -198,9 +244,9 @@ class TxtFile(object):
         raise KeyError(item)
 
     @staticmethod
-    def read(fname):
+    def read(fname, merge_duplicate_shots=False):
         """Read a PocketTopo .TXT file and produce a `TxtFile` object which represents it"""
-        return PocketTopoTxtParser(fname).parse()
+        return PocketTopoTxtParser(fname, merge_duplicate_shots).parse()
 
     # def write(self, outf):
     #     """Write a `Survey` to the specified .DAT file"""
@@ -212,12 +258,14 @@ class TxtFile(object):
 class PocketTopoTxtParser(object):
     """Parses the PocketTopo .TXT file format"""
 
-    def __init__(self, txtfilename):
+    def __init__(self, txtfilename, merge_duplicate_shots=False):
         self.txtfilename = txtfilename
+        self.merge_duplicate_shots = merge_duplicate_shots
 
     def parse(self):
         """Produce a `TxtFile` object from the .TXT file"""
         log.debug('Parsing PocketTopo .TXT file %s ...', self.txtfilename)
+        SurveyClass = MergingSurvey if self.merge_duplicate_shots else Survey
         txtobj = None
 
         with codecs.open(self.txtfilename, 'rb', 'windows-1252') as txtfile:
@@ -241,7 +289,7 @@ class PocketTopoTxtParser(object):
                 date = datetime.strptime(date, '%Y/%m/%d').date()
                 declination = float(declination)
                 comment = toks[3].strip('"') if len(toks) == 4 else ''
-                survey = Survey(id, date, comment, declination, cave_name)
+                survey = SurveyClass(id, date, comment, declination, cave_name)
                 txtobj.add_survey(survey)
 
             while not lines[0]:

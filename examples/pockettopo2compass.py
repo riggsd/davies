@@ -42,8 +42,8 @@ def pockettopo2compass(txtfilename, exclude_splays=False):
     """Main function which converts a PocketTopo .TXT file to a Compass .DAT file"""
     print 'Converting PocketTopo data file %s ...' % txtfilename
 
-    # Read our PocketTopo .TXT file
-    infile = pockettopo.TxtFile.read(txtfilename)
+    # Read our PocketTopo .TXT file, averaging triple-shots in the process
+    infile = pockettopo.TxtFile.read(txtfilename, merge_duplicate_shots=True)
 
     cave_name = os.path.basename(txtfilename).rsplit('.', 1)[0].replace('_', ' ')
     outfilename = txtfilename.rsplit('.', 1)[0] + '.DAT'
