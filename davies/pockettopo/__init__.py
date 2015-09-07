@@ -2,6 +2,9 @@
 davies.pockettopo: Module for parsing and working with exported PocketTopo survey data
 """
 
+from __future__ import division
+from __future__ import print_function
+
 import re
 import codecs
 import logging
@@ -313,7 +316,7 @@ class PocketTopoTxtParser(object):
                     if len(toks) != 4:  # ??
                         log.debug('Skipping unrecognized shot:  %s %s', line, '"%s"' % comment if comment else '')
                         continue
-                    station, vals = toks[0], map(float, toks[1:])
+                    station, vals = toks[0], list(map(float, toks[1:]))
                     if vals[0] == 0.0:  # fake shot
                         log.debug('Skipping zero-length shot:  %s %s', line, '"%s"' % comment if comment else '')
                     else:  # reference point
@@ -350,8 +353,8 @@ if __name__ == '__main__':
 
     for fname in sys.argv[1:]:
         txtfile = PocketTopoTxtParser(fname).parse()
-        print '%s  (%s, %d)' % (txtfile.name, txtfile.length_units, txtfile.angle_units)
+        print('%s  (%s, %d)' % (txtfile.name, txtfile.length_units, txtfile.angle_units))
         for survey in txtfile:
-            print '\t', '[%s] %s (%0.1f %s)' % (survey.name, survey.comment, survey.length, txtfile.length_units)
+            print('\t', '[%s] %s (%0.1f %s)' % (survey.name, survey.comment, survey.length, txtfile.length_units))
             for shot in survey:
-                print '\t\t', shot
+                print('\t\t', shot)

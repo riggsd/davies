@@ -19,7 +19,7 @@ Current support includes:
    directory contains scripts with which to build tools of this sort)
 
 
-Browse the `Davies API documentation  <http://davies.readthedocs.org>`_
+Browse the `Davies API documentation  <http://davies.readthedocs.org>`_.
 
 
 Example usage with Compass survey data::
@@ -89,6 +89,13 @@ the following command on Mac OS X or most Linux distributions::
 If you've downloaded a source distribution or checked out from the git repository, install locally with::
 
     $> python setup.py install
+
+
+Development happens on `GitHub <https://github.com/riggsd/davies>`_.
+
+.. image:: https://travis-ci.org/riggsd/davies.svg?branch=master
+    :target: https://travis-ci.org/riggsd/davies
+
 
 
 Name
