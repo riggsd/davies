@@ -13,7 +13,6 @@ def pltparser(pltfilename):
     parser = CompassPltParser(pltfilename)
     plt = parser.parse()
 
-
     g = nx.Graph()
     pos = {}
     ele = {}
@@ -21,7 +20,7 @@ def pltparser(pltfilename):
         prev = None
 
         for cmd in segment:
-            pos[cmd.name] = (-cmd.x, cmd.y)
+            pos[cmd.name] = (cmd.x, cmd.y)
             ele[cmd.name] = cmd.z
             if not prev or cmd.cmd == 'M':
                 prev = cmd  # move
@@ -31,7 +30,7 @@ def pltparser(pltfilename):
 
     pyplot.figure().suptitle(plt.name, fontweight='bold')
     colors = [ele[n] for n in g]
-    nx.draw(g, pos, node_color=colors, vmin=min(colors), vmax=max(colors), with_labels=False, node_size=15)
+    nx.draw(g, pos, node_color=colors, vmin=min(colors), vmax=max(colors), with_labels=True, node_size=15)
     pyplot.show()
 
 

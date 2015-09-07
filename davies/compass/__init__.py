@@ -29,6 +29,20 @@ class Shot(OrderedDict):
     """Representation of a single shot in a Compass Survey."""
 
     def __init__(self, *args, **kwargs):
+        """
+        :kwarg FROM:    (str) from station
+        :kwarg TO:      (str) to station
+        :kwarg BEARING: (float) forward compass
+        :kwarg AZM2:    (float) back compass
+        :kwarg INC:     (float) forward inclination
+        :kwarg INC2:    (float) back inclination
+        :kwarg LENGTH:  (float) distance
+        :kwarg FLAGS:   (collection of :class:`Exclude`) shot exclusion flags
+        :kwarg COMMENTS: (str)
+        :kwarg declination: (float) magnetic declination
+
+        :ivar declination: (float) set or get magnetic declination adjustment
+        """
         self.declination = kwargs.pop('declination', 0.0)
         OrderedDict.__init__(self, *args, **kwargs)
 
@@ -93,7 +107,8 @@ class Survey(object):
         self.shots = shots if shots else []
 
     def add_shot(self, shot):
-        """Add a shot dictionary to :attr:`shots`."""
+        """Add a shot dictionary to :attr:`shots`, applying this survey's magnetic declination"""
+        shot.declination = self.declination
         self.shots.append(shot)
 
     @property
@@ -130,30 +145,32 @@ class Survey(object):
             'SURVEY NAME: %s' % self.name,
             'SURVEY DATE: %s  COMMENT:%s' % (self.date.strftime('%m %d %Y'), self.comment),
             'SURVEY TEAM:',
-            ','.join(self.team),
-            'DECLINATION: %7.2f  FORMAT: %s  CORRECTIONS:  %.2f %.2f %.2f' % (self.declination, self.lrud_format, 0, 0, 0),  # TODO: corrections
+            ','.join(self.team) if self.team else '',
+            'DECLINATION: %7.2f  FORMAT: %s  CORRECTIONS:  %.2f %.2f %.2f' % (self.declination, self.lrud_format or '', 0, 0, 0),  # TODO: corrections
             '',
             '\t'.join(self.shot_header),
             '',
         ]
         for shot in self.shots:
             vals = []
-            for k,v in shot.items():
+            for k,v in shot.items():  # FIXME: this depends on OrderedDict ordering, ensure we match `shot_header`
                 if k in ('BEARING', 'INC', 'AZM2', 'INC2', 'LENGTH'):
                     vals.append('%7.2f' % (v if v is not None else -999.0))
                 elif k in ('LEFT', 'RIGHT', 'UP', 'DOWN'):
                     vals.append('%7.2f' % (v if v is not None and v != float('inf') else -9.90))
                 elif k in ('FROM', 'TO'):
+                    v = v or ''
                     vals.append(v.rjust(6))
                 elif k in ('FLAGS', 'COMMENTS'):
                     pass  # handle them together below
                 else:
-                    vals.append(str(v))
+                    vals.append(str(v) if v is not None else '')
 
             if shot.get('FLAGS', ''):
-                vals.append('#|%s#  %s' % (''.join(list(shot['FLAGS'])), shot.get('COMMENTS', '')))
+                flags = '#|%s#' % ''.join(list(shot.get('FLAGS', ())))
+                vals.append('%s  %s' % (flags, shot.get('COMMENTS', '') or ''))
             else:
-                vals.append(shot.get('COMMENTS', ''))
+                vals.append(shot.get('COMMENTS', '') or '')
 
             lines.append('\t'.join(vals))
         return lines
@@ -233,6 +250,10 @@ class UTMLocation(object):
         self.zone = int(zone) if zone is not None else None
         self.convergence = convergence
         self.datum = datum
+
+    @property
+    def __geo_interface__(self):
+        return {'type': 'Point', 'coordinates': (self.easting, self.northing, self.elevation)}
 
     def __str__(self):
         return "<%s UTM Zone %s %0.1fE %0.1fN %0.1f>" % (self.datum, self.zone, self.easting, self.northing, self.elevation)
@@ -394,7 +415,7 @@ class CompassSurveyParser(object):
                 shot_vals += [flags, comment.strip()]
 
             shot_vals = [(header, self._coerce(header, val)) for (header, val) in zip(shot_header, shot_vals)]
-            shot = Shot(shot_vals, declination=declination)
+            shot = Shot(shot_vals)
             survey.add_shot(shot)
 
         #log.debug("Survey: name=%s shots=%d length=%0.1f date=%s team=%s\n%s", name, len(shots), survey.length, date, team, '\n'.join([str(shot) for shot in survey.shots]))
