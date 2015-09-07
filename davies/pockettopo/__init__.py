@@ -22,11 +22,12 @@ class Shot(OrderedDict):
     """
     Representation of a single shot in a PocketTopo Survey.
 
-    :kwarg FROM: (str)
-    :kwarg TO: (str) optional
-    :kwarg LENGTH: (float)
-    :kwarg AZM: (float)
-    :kwarg INC: (float)
+    :kwarg FROM:    (str) from station
+    :kwarg TO:      (str) optional to station
+    :kwarg LENGTH:  (float) distance
+    :kwarg AZM:     (float) compass
+    :kwarg INC:     (float) inclination
+    :kwarg COMMENT: (str)
     :kwarg declination: (float) optional
 
     :ivar declination: (float) set or get the applied magnetic declination for the shot
@@ -248,7 +249,7 @@ class PocketTopoTxtParser(object):
 
             # finally actual survey data
             while lines:
-                line = lines.pop().strip()
+                line = lines.pop(0).strip()
                 if not line:
                     continue
 
