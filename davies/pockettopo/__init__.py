@@ -72,12 +72,14 @@ class Shot(OrderedDict):
 class Survey(object):
     """Representation of a PocketTopo Survey object. A Survey is a container for :class:`Shot` objects."""
 
-    def __init__(self, name=None, date=None, comment=None, declination=0.0, cave_name=None, shots=None):
+    def __init__(self, name=None, date=None, comment=None, declination=0.0, cave_name=None, length_units='m', angle_units=360, shots=None):
         self.name = name
         self.date = date
         self.comment = comment
         self.declination = declination
         self.cave_name = cave_name
+        self.length_units = length_units
+        self.angle_units = angle_units
         self.shots = shots if shots else []
 
     def add_shot(self, shot):
@@ -128,6 +130,15 @@ class MergingSurvey(Survey):
     the duplicate shot. We use a "running" mean algorithm, so that this feature works for any number
     of subsequent duplicate shots (two, three, four...).
     """
+    # For performance, we only look backwards at the immediately preceding shots!
+
+    def _inverse_azm(self, azm):
+        """Convert forward AZM to back AZM and vice versa"""
+        return (azm + self.angle_units/2) % self.angle_units
+
+    def _inverse_inc(self, inc):
+        """Convert forward INC to back INC and vice versa"""
+        return -1 * inc
 
     def add_shot(self, shot):
         """
@@ -143,20 +154,48 @@ class MergingSurvey(Survey):
         from_, to = shot['FROM'], shot['TO']
         prev_shot = self.shots[-1]
         prev_from, prev_to = prev_shot['FROM'], prev_shot['TO']
+
         if from_ == prev_from and to == prev_to:
             # dupe shot! calculate iterative "running" mean and merge into the previous shot
             total_count = prev_shot.dupe_count + 1
+
             log.debug('Merging %d shots "%s" <- "%s"', total_count, prev_shot, shot)
+            if abs(shot['AZM'] - prev_shot['AZM']) > 2.0:
+                log.warning('Merged forward AZM disagreement of %0.1f for "%s" <- "%s"', abs(shot['AZM'] - prev_shot['AZM']), prev_shot, shot)
+            if abs(shot['INC'] - prev_shot['INC']) > 2.0:
+                log.warning('Merged forward INC disagreement of %0.1f for "%s" <- "%s"', abs(shot['INC'] - prev_shot['INC']), prev_shot, shot)
+            if abs(shot['LENGTH'] - prev_shot['LENGTH']) > 1.0:
+                log.warning('Merged forward LENGTH disagreement of %0.1f for "%s" <- "%s"', abs(shot['LENGTH'] - prev_shot['LENGTH']), prev_shot, shot)
+
             avg_length = (prev_shot['LENGTH'] * prev_shot.dupe_count + shot['LENGTH']) / total_count
             avg_azm = (prev_shot['AZM'] * prev_shot.dupe_count + shot['AZM']) / total_count
             avg_inc = (prev_shot['INC'] * prev_shot.dupe_count + shot['INC']) / total_count
             merged_comments = ('%s %s' % (prev_shot.get('COMMENT', '') or '', shot.get('COMMENT', '') or '')).strip() or None
+
             prev_shot['LENGTH'], prev_shot['AZM'], prev_shot['INC'], prev_shot['COMMENT'] = avg_length, avg_azm, avg_inc, merged_comments
             prev_shot.dupe_count += 1
+
         elif from_ == prev_to and to == prev_from:
-            # backsight!
-            log.debug('Not merging backsight "%s" <- "%s" TODO!', prev_shot, shot)
-            self.shots.append(shot)  # TODO: implement backsights
+            # backsight! we do the same iterative "running" mean rather than assuming a single forward and single back
+            total_count = prev_shot.dupe_count + 1
+            inv_azm, inv_inc = self._inverse_azm(shot['AZM']), self._inverse_inc(shot['INC'])
+
+            log.debug('Merging %d backsights "%s" <- "%s"', total_count, prev_shot, shot)
+            if abs(inv_azm - prev_shot['AZM']) > 2.0:
+                log.warning('Backsight AZM disagreement of %0.1f for "%s" <- "%s"', abs(inv_azm - prev_shot['AZM']), prev_shot, shot)
+            if abs(inv_inc - prev_shot['INC']) > 2.0:
+                log.warning('Backsight INC disagreement of %0.1f for "%s" <- "%s"', abs(inv_inc - prev_shot['INC']), prev_shot, shot)
+            if abs(shot['LENGTH'] - prev_shot['LENGTH']) > 1.0:
+                log.warning('Backsight LENGTH disagreement of %0.1f for "%s" <- "%s"', abs(shot['LENGTH'] - prev_shot['LENGTH']), prev_shot, shot)
+
+            avg_length = (prev_shot['LENGTH'] * prev_shot.dupe_count + shot['LENGTH']) / total_count
+            avg_azm = (prev_shot['AZM'] * prev_shot.dupe_count + inv_azm) / total_count
+            avg_inc = (prev_shot['INC'] * prev_shot.dupe_count + inv_inc) / total_count
+            merged_comments = ('%s %s' % (prev_shot.get('COMMENT', '') or '', shot.get('COMMENT', '') or '')).strip() or None
+
+            prev_shot['LENGTH'], prev_shot['AZM'], prev_shot['INC'], prev_shot['COMMENT'] = avg_length, avg_azm, avg_inc, merged_comments
+            prev_shot.dupe_count += 1
+
         else:
             # a new, different shot; no merge
             self.shots.append(shot)
@@ -216,6 +255,8 @@ class TxtFile(object):
 
     def add_survey(self, survey):
         """Add a :class:`Survey` to :attr:`surveys`."""
+        survey.length_units = self.length_units
+        survey.angle_units = self.angle_units
         self.surveys.append(survey)
 
     def add_reference_point(self, station, utm_location):
@@ -352,7 +393,7 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
 
     for fname in sys.argv[1:]:
-        txtfile = PocketTopoTxtParser(fname).parse()
+        txtfile = PocketTopoTxtParser(fname, merge_duplicate_shots=True).parse()
         print('%s  (%s, %d)' % (txtfile.name, txtfile.length_units, txtfile.angle_units))
         for survey in txtfile:
             print('\t', '[%s] %s (%0.1f %s)' % (survey.name, survey.comment, survey.length, txtfile.length_units))
