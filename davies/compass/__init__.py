@@ -90,6 +90,12 @@ class Shot(OrderedDict):
     def is_excluded(self):
         return Exclude.LENGTH in self.flags or Exclude.TOTAL in self.flags
 
+    def __str__(self):
+        return ', '.join('%s=%s' % (k,v) for (k,v) in self.items())
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self)
+
 
 class Survey(object):
     """Representation of a Compass Survey object. A Survey is a container for :class:`Shot` objects."""
@@ -103,7 +109,7 @@ class Survey(object):
         self.lrud_format = lrud_format  # TODO: LRUD and units not supported
         self.corrections = corrections  # TODO: instrument corrections not supported
         self.cave_name = cave_name
-        self.shot_header = shot_header
+        self.shot_header = shot_header  # FIXME: this ordering is not optional!
         self.shots = shots if shots else []
 
     def add_shot(self, shot):
@@ -170,7 +176,7 @@ class Survey(object):
                 flags = '#|%s#' % ''.join(list(shot.get('FLAGS', ())))
                 vals.append('%s  %s' % (flags, shot.get('COMMENTS', '') or ''))
             else:
-                vals.append(shot.get('COMMENTS', '') or '')
+                vals.append((shot.get('COMMENTS', '') or '')[:80])
 
             lines.append('\t'.join(vals))
         return lines
