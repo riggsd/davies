@@ -5,8 +5,18 @@ survey. The general idea is simple, but "the devil is in the details"; Davies do
 the differences in each format, so we must carefully convert from one shot format to the other, as
 well has "hack" a few nuances.
 
-usage: pockettopo2compass.py TXTFILE...
 
+usage: pockettopo2compass.py [-h] [--no-splays] [--lrud] TXTFILE [TXTFILE...]
+
+Create Compass .DAT files from PocketTopo .TXT export files.
+
+positional arguments:
+  FNAME        One or more PocketTopo .TXT export files
+
+optional arguments:
+  -h, --help   show this help message and exit
+  --no-splays  Exclude splay shots from output
+  --lrud       Calculate LRUD values from splay shots
 """
 
 import sys
@@ -41,12 +51,12 @@ def find_candidate_vert_splays(splays, inc, delta=LRUD_DELTA):
         return [splay for splay in splays if splay['INC'] <= -30]
 
 
-def shot2shot(insurvey, inshot):
+def shot2shot(insurvey, inshot, calculate_lrud=True):
     """Convert a PocketTopo `Shot` to a Compass `Shot`"""
     # FIXME: requires angles in degrees only, no grads
 
     splays = insurvey.splays[inshot['FROM']]
-    if not inshot.is_splay and splays:
+    if calculate_lrud and not inshot.is_splay and splays:
         # Try our best to convert PocketTopo splay shots into LRUDs
         print '\n\n' 'sta %s has %d splays' % (inshot['FROM'], len(splays))
 
@@ -91,7 +101,7 @@ def shot2shot(insurvey, inshot):
         print '\t', inshot, 'LRUD=', ', '.join(('%0.1f' % v) for v in (left, right, up, down))
         assert(all(v >=0 for v in (left, right, up, down)))
     else:
-        up, down, left, right = 0.00, 0.00, 0.00, 0.00
+        up, down, left, right = -9.90, -9.90, -9.90, -9.90
 
     return compass.Shot([
         ('FROM', inshot['FROM']),
@@ -110,7 +120,7 @@ def shot2shot(insurvey, inshot):
     ])
 
 
-def pockettopo2compass(txtfilename, exclude_splays=False):
+def pockettopo2compass(txtfilename, exclude_splays=False, calculate_lrud=False):
     """Main function which converts a PocketTopo .TXT file to a Compass .DAT file"""
     print 'Converting PocketTopo data file %s ...' % txtfilename
 
@@ -133,12 +143,12 @@ def pockettopo2compass(txtfilename, exclude_splays=False):
                 continue  # skip
 
             # ...but the Shot data fields require some tweaking, see `shot2shot()` for details
-            outshot = shot2shot(insurvey, inshot)
+            outshot = shot2shot(insurvey, inshot, calculate_lrud)
             outsurvey.add_shot(outshot)
 
         # We have to hack a few Compass details dealing with units and field ordering for now
         outsurvey.shot_header = outshot.keys()  # FIXME?
-        outsurvey.lrud_format = 'DDDDLRUDLADN'  # FIXME?
+        outsurvey.lrud_format = 'DDDDLRUDLADNF'  # FIXME?
         outfile.add_survey(outsurvey)
 
         # DEBUG
@@ -151,11 +161,15 @@ def pockettopo2compass(txtfilename, exclude_splays=False):
 
 
 if __name__ == '__main__':
+    import argparse
+
     logging.basicConfig(level=logging.DEBUG)
 
-    if len(sys.argv) < 2:
-        print >> sys.stderr, 'usage: %s TXTFILE...' % os.path.basename(sys.argv[0])
-        sys.exit(2)
+    parser = argparse.ArgumentParser(description='Create Compass .DAT files from PocketTopo .TXT export files.')
+    parser.add_argument('filenames', metavar='FNAME', nargs='+', help='One or more PocketTopo .TXT export files')
+    parser.add_argument('--no-splays', dest='exclude_splays', action='store_true', help='Exclude splay shots from output')
+    parser.add_argument('--lrud', dest='calculate_lrud', action='store_true', help='Calculate LRUD values from splay shots')
+    args = parser.parse_args()
 
-    for txtfilename in sys.argv[1:]:
-        pockettopo2compass(txtfilename)
+    for txtfilename in args.filenames:
+        pockettopo2compass(txtfilename, args.exclude_splays, args.calculate_lrud)
