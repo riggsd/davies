@@ -16,11 +16,16 @@ import logging
 from davies import pockettopo
 
 
+def convert_filename(txtfilename, outdir='.'):
+    """Convert a .TXT filename to a Therion .TH filename"""
+    return os.path.join(outdir, os.path.basename(txtfilename)).rsplit('.', 1)[0] + '.th'
+
+
 def pockettopo2therion(txtfilename):
     """Main function which converts a PocketTopo .TXT file to a Compass .DAT file"""
     print 'Converting PocketTopo data file %s ...' % txtfilename
     infile = pockettopo.TxtFile.read(txtfilename, merge_duplicate_shots=True)
-    outfilename = os.path.join('.', os.path.basename(txtfilename)).rsplit('.', 1)[0] + '.th'
+    outfilename = convert_filename(txtfilename)
 
     with open(outfilename, 'w') as outfile:
         print >> outfile, 'encoding utf-8'
@@ -30,11 +35,29 @@ def pockettopo2therion(txtfilename):
             print >> outfile, '\t' 'date ' + insurvey.date.strftime('%Y.%m.%d')
             print >> outfile, '\t' 'data normal from to compass clino tape'
             for shot in insurvey:
-                print >> outfile, '\t' '%s\t%s\t%7.2f\t%7.2f\t%6.2f\n' % \
+                print >> outfile, '\t' '%s\t%s\t%7.2f\t%7.2f\t%6.2f' % \
                                   (shot['FROM'], shot.get('TO', None) or '-',
                                    shot.azm, shot.inc, shot.length)
             print >> outfile, 'endcentreline'
         print 'Wrote Therion data file %s .' % outfilename
+
+
+def thconfig(txtfiles, cavename='cave'):
+    """Write `thconfig` file for the Therion project"""
+    fmts_model = ['lox', '3d', 'dxf', 'kml', 'plt', 'vrml']
+    outfilename = 'thconfig'
+
+    with open(outfilename, 'w') as outfile:
+        for txtfilename in txtfiles:
+            print >> outfile, 'source "%s"' % convert_filename(txtfilename)
+        print >> outfile
+
+        for fmt in fmts_model:
+            print >> outfile, 'export model -output "%s"' % os.path.join('models', '%s.%s' % (cavename, fmt))
+
+        print >> outfile, 'export map -projection plan -format esri -output "%s"' % os.path.join('models', 'gis')
+
+        print 'Wrote Therion project file %s .' % outfilename
 
 
 if __name__ == '__main__':
@@ -44,5 +67,7 @@ if __name__ == '__main__':
         print >> sys.stderr, 'usage: %s TXTFILE...' % os.path.basename(sys.argv[0])
         sys.exit(2)
 
-    for txtfilename in sys.argv[1:]:
+    txtfiles = sys.argv[1:]
+    for txtfilename in txtfiles:
         pockettopo2therion(txtfilename)
+    thconfig(txtfiles)
