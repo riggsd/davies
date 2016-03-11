@@ -1,0 +1,282 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1265\cocoasubrtf210
+{\fonttbl\f0\fswiss\fcharset0 ArialMT;\f1\fmodern\fcharset0 Courier-Bold;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red109\green109\blue109;}
+\margl1440\margr1440\vieww12600\viewh7800\viewkind0
+\deftab720
+\pard\pardeftab720
+
+\f0\b\fs20 \cf0 Project File Format.
+\b0\fs24 \
+\pard\pardeftab720\sa240
+
+\fs20 \cf0 Normally, you would create Project or "MAK" file using the Project Manager. Occasionally, someone might like to create a Project File in some other way. For example, you might want to create a Project File using a database. For this reason, this section of the document covers the actual internal format of the Project File. If you are not a programmer, you can skip this section.
+\fs24 \
+
+\fs20 \'a0Generally speaking, a Project File is just an ASCII text file. Thus, it is very easy to create Project Files using a text editor, word processor, database or spreadsheet. Here is a detailed explanation of the different parts:
+\fs24 \
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth15380\trftsWidth3 \trbrdrt\brdrnil \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth15180\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt100 \clpadl100 \clpadb100 \clpadr100 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\b\fs20 \cf0 Project Format - File List
+\b0\fs24 \cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth15380\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth15180\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt100 \clpadl100 \clpadb100 \clpadr100 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\fs20 \cf0 Basically, a Project File just consists of a list of files that will be combined. As an example, here is a simple project file: \'a0
+\fs24 \
+\pard\intbl\itap1\pardeftab720\sa240
+
+\fs20 \cf0 \'a0\'a0\'a0 #DEEP1.DAT; \uc0\u8232 \'a0\'a0\'a0 #DEEP2.DAT; \u8232 \'a0\'a0\'a0 #DEEP3.DAT; \'a0
+\fs24 \
+
+\fs20 As you can see, it is a list of filenames. Each line begins with a pound sign "#" and ends with a semicolon ";". All other lines are ignored by the program and can be used for notes or comments. After the pound sign, a file name must appear. This can be any file name and can include a path specification. Spaces, tabs, carriage returns, line feeds and all "white space" characters are ignored. Comments begin with a forward slash \'93/\'94 and are terminated either by another forward slash or the end of the line. The "make" format allows a great deal of freedom in the way you can lay out the file. The format allows the files and linking information to be set up virtually free form.
+\fs24 \cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth15380\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth15180\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt100 \clpadl100 \clpadb100 \clpadr100 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\b\fs20 \cf0 File Format - Fixed Stations
+\b0\fs24 \cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth15380\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth15180\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt100 \clpadl100 \clpadb100 \clpadr100 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\fs20 \cf0 It is sometimes useful to set the location of a survey station to a fixed set of coordinates. For example, this is useful when you have the coordinates for the entrances of several caves and you want to tie them together into a single survey.
+\fs24 \
+\pard\intbl\itap1\pardeftab720\sa240
+
+\fs20 \cf0 \'a0You can set the location of a station by placing the station name in the list of links for a survey. The station name is then followed by the coordinates for the fixed location you want to use enclosed in \'93square brackets\'94 \'93[]\'94. The coordinates item begins with a \'93Units\'94 command that specifies the unit that should be used for the location coordinates. The letter F means that feet are used, the letter M means that meters are used. This is followed by the east, north and vertical coordinates of the fixed location. Each item in the measurement units and the coordinates can be separated by commas, spaces or any other character that cannot be interpreted as part of the Units Command or the coordinate numbers.\'a0
+\fs24 \
+
+\fs20 #TEST1.DAT,A1[F,10.1,20.2,30.3]; \uc0\u8232 #TEST2.DAT,C1[M,1.2,2.3,3.4];
+\fs24 \
+
+\fs20 \'a0The example entry links together two survey files, TEST1 and TEST2. In the first file, the station A1 is fixed to the location 10.1 east, 20.2 north and 30.3 vertical and the units are in feet. The second file has one fixed station. The coordinates for this fixed station are specified in meters.
+\fs24 \cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth15380\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth15180\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt100 \clpadl100 \clpadb100 \clpadr100 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\b\fs20 \cf0 File Format - Linking
+\b0\fs24 \cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth15380\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth15180\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt100 \clpadl100 \clpadb100 \clpadr100 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\fs20 \cf0 "Linking" is a technique that was necessary under DOS where memory was limited. Under Windows, which gives programs access to large blocks of memory, linking is seldom necessary. \'a0
+\fs24 \
+\pard\intbl\itap1\pardeftab720\sa240
+
+\fs20 \cf0 Basically, "links" are a method of connecting the two files together. Links specify the stations in the old file that connect to the new file. For example, if the shot B22 to CD1 connects the old file to the new file, then B22 is the link and you would use it as a link. You can have up to 500 links between files. The value of linking is that after the compiler has been given all the linking stations, it can forget all other stations in the old file. This frees up a large block of memory. \'a0
+\fs24 \
+
+\fs20 Even though Windows generally gives you enough memory so that linking is unnecessary, there are still situations where linking is useful. First of all, since it frees memory, it could be used to combine several large caves into a huge cave system. Second, linked files compile slightly faster. Finally, with linking, you can combine two caves that have duplicate survey names. Normally, you would have to rename all conflicting stations; but with linking, the program "forgets" all the stations in the old file so there is no conflict. \'a0
+\fs24 \
+
+\fs20 Link stations should be placed in the make file after the filename. If there is more than one link station they should be separated by commas. Here is a simple example: \'a0
+\fs24 \
+
+\fs20 #OLDCAVE.DAT;\uc0\u8232 #NEWCAVE.DAT,B22,C17;
+\fs24 \
+
+\fs20 In this example, B22 and C17 are linking stations between OLDCAVE and NEWCAVE. You will notice that OLDCAVE has no links. This is because it is the first file to processed, and it does not need to be connected to a previous file. You can combine links and fixed stations like this: \'a0
+\fs24 \
+
+\fs20 #TEST2.DAT,AB4,C1[M,1.2,2.3,3.4],C12;
+\fs24 \
+
+\fs20 \'a0If you are working with three or more files, you have to plan ahead. This is because you may have links between the first file and the third file. Since the program erases everything but the link stations between files, you must be sure to carry all the links from the first to the third file. Look at the following example:
+\fs24 \
+\pard\intbl\itap1\pardeftab720\sa240
+
+\f1\b\fs20 \cf0 FILE1\'a0\'a0\'a0\'a0 -\'a0\'a0\'a0 (No links)\uc0\u8232 FILE2\'a0\'a0\'a0\'a0 -\'a0\'a0\'a0 Needs: A22 (From FILE1)\u8232 FILE3\'a0\'a0\'a0\'a0 -\'a0\'a0\'a0 Needs: A16 (From FILE1), B14 (From FILE2) 
+\f0\b0 \'a0
+\fs24 \
+\pard\intbl\itap1\pardeftab720\sa240
+
+\fs20 \cf0 FILE2 needs A22 as a link from FILE1. FILE3 needs two links, A16 from FILE1 and B14 from FILE2. Since FILE2 is processed before FILE3, and FILE3 needs A16 from FILE1, you must carry A16 into FILE2 even though FILE2 doesn't need it for its own processing. This is the way the Make file would look:
+\fs24 \
+
+\fs20 \'a0#FILE1.DAT;\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 /no links\uc0\u8232 #FILE2.DAT,A22,A16; \u8232 #FILE3.DAT,A16,B14;
+\fs24 \
+
+\fs20 The following Make file for Wind Cave illustrates a complex Make file. (Under Windows, this kind of complex Make file is no longer necessary unless your have duplicate station names.)
+\fs24 \
+\pard\intbl\itap1\pardeftab720\sa240
+
+\f1\b\fs20 \cf0 #WIND1.DAT;\uc0\u8232 #WIND2.DAT,
+\f0\b0\fs24 \
+
+\f1\b\fs20 C41,F12,P9,C41,C40,UG30,NFP1,C39,SA'12,PP3,\'a0 /from Wind1 to Wind2 JF65,JF109,L*6,JF10,\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 /from Wind1 to Wind3 KX37R,KY258R,JW1R,KY357,\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 /from Wind1 to Wind5 CR1,KK32,SA9R,BX21,KK32;\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 /from Wind1 to Wind4
+\f0\b0\fs24 \
+
+\f1\b\fs20 #WIND3.DAT, \uc0\u8232 JF65,JF109,L*6,JF10,\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 /from Wind1 to Wind3 KX37R,KY258R,JW1R,KY357,\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 /from Wind1 to Wind5 CR1,KK32,SA9R,BX21,KK32;\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 /from Wind1 to Wind4
+\f0\b0\fs24 \
+
+\f1\b\fs20 #WIND4.DAT, \uc0\u8232 KX37R,KY258R,JW1R,KY357,\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 /from Wind1 to Wind5 CR1,KK32,SA9R,BX21,KK32,\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 /from Wind1 to Wind4 MP74,MP28,PC2,KY349,KY326,\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 /from Wind3 to Wind5 AA29,AA30,AA32,CR4,PC7,ZB1;\'a0\'a0\'a0\'a0\'a0\'a0\'a0 /from Wind3 to Wind4
+\f0\b0\fs24 \
+
+\f1\b\fs20 #WIND5.DAT, \uc0\u8232 SE202,\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 /from Wind4 to Wind6 KX37R,KY258R,JW1R,KY357,\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 /from Wind1 to Wind5 MP74,MP28,PC2,KY349,KY326,\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 /from Wind3 to Wind5 KK20,K29,KK26,KF14,BB35,BB37,KQ45,\'a0\'a0\'a0\'a0\'a0 /from Wind4 to Wind5 KA1,KO4,KI24,KK33,KK37,KK41,KK53,BB33,SD15;
+\f0\b0\fs24 \
+
+\f1\b\fs20 #WIND6.DAT, \uc0\u8232 SE202;\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0\'a0 /from Wind4 to Wind6
+\f0\b0\fs24 \
+\'a0\cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth15380\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth15180\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt100 \clpadl100 \clpadb100 \clpadr100 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\b\fs20 \cf0 Base Locations.
+\b0\fs24 \cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth15380\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth15180\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt100 \clpadl100 \clpadb100 \clpadr100 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\b\fs20 \cf0 Base Location.
+\b0  Compass allows you to enter a base location for a cave or cave system. The Base Location is used for calculating Magnetic Declination. It allows you make Magnetic Declination calculations even when you don't have any fixed stations associated with any of the surveys.\'a0
+\fs24 \
+\pard\intbl\itap1\pardeftab720\sa240
+
+\fs20 \cf0 Here is an example of a Base Location in a Compass MAK file:\'a0
+\fs24 \
+
+\fs20 @398315.500,4483735.300,3048.000,13,0.780;\uc0\u8232 &North American 1983;
+\fs24 \
+
+\fs20 \'a0
+\b I. The '@' Parameter
+\b0 . This parameter indicates the base location of the cave. Since the value is only used to calculate Magnetic Declination, it does not have to be the entrance or specific location in the cave. All that is necessary is
+\fs24 \
+
+\fs20 \'a0Four values are specified in the command. Here is a description of each value in the order:\'a0
+\fs24 \
+\pard\intbl\itap1\pardeftab720\li960
+
+\b\fs20 \cf0 1. UTM East.
+\b0  The first value specifies the standard UTM-East distance in meters.
+\fs24 \
+\pard\intbl\itap1\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\intbl\itap1\pardeftab720\li960
+
+\b\fs20 \cf0 2. UTM North.
+\b0  This value specified the standard UTM-North distance in meters.
+\fs24 \
+\pard\intbl\itap1\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\intbl\itap1\pardeftab720\li960
+
+\b\fs20 \cf0 3. Elevation.
+\b0  This value specifies the elevation in meters.
+\fs24 \
+\pard\intbl\itap1\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\intbl\itap1\pardeftab720\li960
+
+\b\fs20 \cf0 4. Zone.
+\b0  This value specified the UTM zone number.
+\fs24 \
+\pard\intbl\itap1\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\intbl\itap1\pardeftab720\li960
+
+\b\fs20 \cf0 5. Convergence Angle.
+\b0  This value is the UTM convergence angle between the UTM grid and the line longitude.\'a0
+\fs24 \
+\pard\intbl\itap1\pardeftab720\sa240
+
+\b\fs20 \cf0 II. The '&' Parameter.
+\b0  This parameter specifies the Datum used in geographic conversion operations. The Datum is specified as a string which must match exactly one of the Datums displayed in the Compass Geographic Calculator.
+\fs24 \cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth15380\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth15180\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt100 \clpadl100 \clpadb100 \clpadr100 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\b\fs20 \cf0 Parameters.
+\b0\fs24 \cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth15380\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth15180\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt100 \clpadl100 \clpadb100 \clpadr100 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\fs20 \cf0 There are two additional parameters that can be specified in a Project File. Each one is specified by a special character. The information is terminated with a semicolon \'93;\'94. Here is a list of the parameters:\'a0
+\fs24 \
+\pard\intbl\itap1\pardeftab720\sa240
+
+\b\fs20 \cf0 UTM Convergence. 
+\b0 UTM coordinates work by superimposing a grid on the surface of the earth. Because of the fact that the earth is a sphere, this grid will not be aligned to true north in some places. Since some maps may be aligned to UTM grid north instead of true north, COMPASS offers the option of aligning the cave to the UTM grid. The amount of misalignment from true north is called the \'93Convergence Angle.\'94 This value is generally calculate by COMPASS if you are using UTM coordinates and kept in a Project File. The Convergence Angle parameter begins with a percent sign (%) and ends with a semicolon (;). The convergence value is found inside the percent-semicolon pair and can be any ASCII fixed or floating point number. For example:\'a0
+\fs24 \
+\pard\intbl\itap1\pardeftab720\sa240
+
+\fs20 \cf0 Example: 
+\i\b %12.34;
+\i0\b0\fs24 \
+
+\fs20 \'a0
+\b UTM Zone. 
+\b0 The UTM coordinate system divides the world up into zones. This parameter allows you to specify the zone that will be used for the fixed stations defined in the project file.
+\b  
+\b0 The Zone parameter begins with a dollar sign ($) and ends with a semicolon (;). The Zone value is found inside the dollar-semicolon pair and can be any ASCII integer value. For example:
+\fs24 \
+
+\fs20 Example: 
+\i\b $12;
+\i0\b0\fs24 \cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth15380\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth15180\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt100 \clpadl100 \clpadb100 \clpadr100 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\b\fs20 \cf0 File Parameters
+\b0 .
+\fs24 \cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth15380\trftsWidth3 \trbrdrl\brdrnil \trbrdrt\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth15180\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt100 \clpadl100 \clpadb100 \clpadr100 \gaph\cellx8640
+
+\itap2\trowd \taflags0 \trgaph108\trleft-108 \trwWidth15180\trftsWidth3 \trbrdrt\brdrnil \trbrdrl\brdrnil \trbrdrt\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth14980\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt100 \clpadl100 \clpadb100 \clpadr100 \gaph\cellx8640
+\pard\intbl\itap2\pardeftab720
+
+\fs20 \cf0 This parameter specifies a series flags that can be applied to all the files in the MAK file. It begins with a dollar sign (!) and ends with a semicolon (;)Here is a list of the flags:\
+\'a0
+\fs24 \
+\pard\intbl\itap2\pardeftab720\li480
+
+\b\fs20 \cf0 1. "O" or "o".
+\b0  This flag controls overriding LRUD association settings. If the flag is set to capital "O." all other methods of controlling the LRUD associations are overridden.
+\fs24 \
+\pard\intbl\itap2\pardeftab720\li480
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\intbl\itap2\pardeftab720\li480
+
+\b\fs20 \cf0 2. "T" or "t".
+\b0  This specifies how the LRUD associations are overridden if the "O" flag is set. If the flag is set to capital "T," all surveys are compiled with the LRUDs associated with the "To" stations. If the flag is set to lower case "t", all surveys are compiled with the LRUDs associated with the "From" station.\'a0
+\fs24 \
+\pard\intbl\itap2\pardeftab720\sa240
+
+\fs20 \cf0 Example: 
+\i\b !OT;
+\i0\b0\fs24 \nestcell \lastrow\nestrow\cell \lastrow\row
+}

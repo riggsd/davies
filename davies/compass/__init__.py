@@ -27,6 +27,7 @@ class Exclude:
 
 class Shot(OrderedDict):
     """Representation of a single shot in a Compass Survey."""
+    # FIXME: support compass, back-compass, and tape corrections
 
     def __init__(self, *args, **kwargs):
         """
@@ -90,20 +91,26 @@ class Shot(OrderedDict):
     def is_excluded(self):
         return Exclude.LENGTH in self.flags or Exclude.TOTAL in self.flags
 
+    def __str__(self):
+        return ', '.join('%s=%s' % (k,v) for (k,v) in self.items())
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self)
+
 
 class Survey(object):
     """Representation of a Compass Survey object. A Survey is a container for :class:`Shot` objects."""
 
-    def __init__(self, name=None, date=None, comment=None, team=None, declination=None, lrud_format=None, corrections=None, cave_name=None, shot_header=None, shots=None):
+    def __init__(self, name=None, date=None, comment=None, team=None, declination=None, lrud_format=None, corrections=None, corrections2=None, cave_name=None, shot_header=None, shots=None):
         self.name = name
         self.date = date
         self.comment = comment
         self.team = team
         self.declination = declination
         self.lrud_format = lrud_format  # TODO: LRUD and units not supported
-        self.corrections = corrections  # TODO: instrument corrections not supported
+        self.corrections, self.corrections2 = corrections, corrections2  # TODO: instrument corrections not supported
         self.cave_name = cave_name
-        self.shot_header = shot_header
+        self.shot_header = shot_header  # FIXME: this ordering is not optional!
         self.shots = shots if shots else []
 
     def add_shot(self, shot):
@@ -119,12 +126,18 @@ class Survey(object):
     @property
     def included_length(self):
         """Surveyed length, not including "excluded" shots"""
-        return sum([shot.length for shot in self.shots if Exclude.LENGTH not in shot.flags and Exclude.TOTAL not in shot.flags])
+        return sum([shot.length for shot in self.shots if shot.is_included])
 
     @property
     def excluded_length(self):
         """Surveyed length which does not count toward the included total"""
         return sum([shot.length for shot in self.shots if Exclude.LENGTH in shot.flags or Exclude.TOTAL in shot.flags])
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return '<%s %s>' % (self.__class__.__name__, self.name)
 
     def __len__(self):
         return len(self.shots)
@@ -143,10 +156,13 @@ class Survey(object):
         lines = [
             self.cave_name,
             'SURVEY NAME: %s' % self.name,
-            'SURVEY DATE: %s  COMMENT:%s' % (self.date.strftime('%m %d %Y'), self.comment),
+            'SURVEY DATE: %s  COMMENT:%s' % (self.date.strftime('%-m %d %Y'), self.comment),
             'SURVEY TEAM:',
             ','.join(self.team) if self.team else '',
-            'DECLINATION: %7.2f  FORMAT: %s  CORRECTIONS:  %.2f %.2f %.2f' % (self.declination, self.lrud_format or '', 0, 0, 0),  # TODO: corrections
+            'DECLINATION: %7.2f  FORMAT: %s  CORRECTIONS:  %s  CORRECTIONS2:  %s' %
+                (self.declination, self.lrud_format or '',
+                 '%.2f %.2f %.2f' % tuple(self.corrections),
+                 '%.2f %.2f' % tuple(self.corrections2)),
             '',
             '\t'.join(self.shot_header),
             '',
@@ -170,7 +186,7 @@ class Survey(object):
                 flags = '#|%s#' % ''.join(list(shot.get('FLAGS', ())))
                 vals.append('%s  %s' % (flags, shot.get('COMMENTS', '') or ''))
             else:
-                vals.append(shot.get('COMMENTS', '') or '')
+                vals.append((shot.get('COMMENTS', '') or '')[:80])
 
             lines.append('\t'.join(vals))
         return lines
@@ -351,7 +367,7 @@ class CompassSurveyParser(object):
 
     @staticmethod
     def _parse_declination_line(line):
-        declination, fmt, corrections = 0.0, '', (0.0, 0.0, 0.0)
+        declination, fmt, corrections, corrections2 = 0.0, '', (0.0, 0.0, 0.0), (0.0, 0.0)
         toks = line.strip().split()
         for i, tok in enumerate(toks):
             if tok == 'DECLINATION:':
@@ -359,8 +375,10 @@ class CompassSurveyParser(object):
             elif tok == 'FORMAT:':
                 fmt = toks[i+1]
             elif tok == 'CORRECTIONS:':
-                corrections = tuple(toks[i+1:])  # does this work for new back-correction?
-        return declination, fmt, corrections
+                corrections = map(float, toks[i+1:i+4])
+            elif tok == 'CORRECTIONS2:':
+                corrections2 = map(float, toks[i+1:i+3])
+        return declination, fmt, corrections, corrections2
 
     def parse(self):
         """Parse our string and return a Survey object, None, or raise :exc:`ParseException`"""
@@ -389,14 +407,16 @@ class CompassSurveyParser(object):
 
         # TODO: implement format (units!), instrument correction(s)
         dec_fmt_corr = lines.pop(0)
-        declination, fmt, corrections = CompassSurveyParser._parse_declination_line(dec_fmt_corr)
+        declination, fmt, corrections, corrections2 = CompassSurveyParser._parse_declination_line(dec_fmt_corr)
 
         lines.pop(0)
         shot_header = lines.pop(0).split()
         val_count = len(shot_header) - 2 if 'FLAGS' in shot_header else len(shot_header)  # 1998 vintage data has no FLAGS, COMMENTS at end
         lines.pop(0)
 
-        survey = Survey(name=name, date=date, comment=comment, team=team, cave_name=cave_name, shot_header=shot_header, declination=declination)
+        survey = Survey(name=name, date=date, comment=comment, team=team, cave_name=cave_name,
+                        shot_header=shot_header, declination=declination,
+                        lrud_format=fmt, corrections=corrections, corrections2=corrections2)
 
         shots = []
         shot_lines = lines

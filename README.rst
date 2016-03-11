@@ -19,7 +19,7 @@ Current support includes:
    directory contains scripts with which to build tools of this sort)
 
 
-Browse the `Davies API documentation  <http://davies.readthedocs.org>`_
+Browse the `Davies API documentation  <http://davies.readthedocs.org>`_.
 
 
 Example usage with Compass survey data::
@@ -91,6 +91,13 @@ If you've downloaded a source distribution or checked out from the git repositor
     $> python setup.py install
 
 
+Development happens on `GitHub <https://github.com/riggsd/davies>`_.
+
+.. image:: https://travis-ci.org/riggsd/davies.svg?branch=master
+    :target: https://travis-ci.org/riggsd/davies
+
+
+
 Name
 ----
 
@@ -105,4 +112,4 @@ License
 -------
 
 Davies is Free / Open Source software licensed under the `MIT License <http://opensource.org/licenses/MIT>`_,
-and is copyright (C) 2013 - 2015 Myotisoft LLC.
+and is copyright (C) 2013 - 2016 Myotisoft LLC.

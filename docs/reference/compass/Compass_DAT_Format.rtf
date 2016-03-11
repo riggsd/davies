@@ -1,0 +1,462 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1265\cocoasubrtf210
+{\fonttbl\f0\fswiss\fcharset0 ArialMT;\f1\fmodern\fcharset0 CourierNewPS-BoldMT;\f2\fmodern\fcharset0 CourierNewPSMT;
+}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue233;\red0\green0\blue0;\red109\green109\blue109;
+}
+\margl1440\margr1440\vieww12600\viewh7800\viewkind0
+\deftab720
+\pard\pardeftab720
+
+\f0\b\fs20 \cf0 Survey Data Format.
+\b0\fs24 \
+\pard\pardeftab720\sa240
+
+\fs20 \cf0 The COMPASS survey data files contain all the original measurements and associated information that make up the original survey data. They are ordinarily created by the COMPASS Survey Editor; but under special circumstances, they can be edited with an ordinary text editor as long as the file format is maintained.. 
+\b Warning!
+\b0 Unless you have a thorough understanding of your editor and ASCII character codes, it is not advisable to directly edit COMPASS survey files. Most word processor will change the format of the survey data and this will corrupt the data. If you need to directly edit survey data, you should use 
+\b XEDIT,
+\b0  a text editor that was designed to not corrupt ASCII data. It is available on the {\field{\*\fldinst{HYPERLINK "http://fountainware.com/"}}{\fldrslt \cf2 \ul \ulc2 Fountain home page}} or on the COMPASS CD-ROM.
+\fs24 \
+
+\fs20 This section describes in detail the current raw survey data format. Listed below you will see a sample survey file. The layout has been compressed slightly so the file will fit on the page, but all the fields are correct:
+\fs24 \
+\pard\pardeftab720\sa240
+
+\f1\b\fs18 \cf0 SECRET CAVE\uc0\u8232 SURVEY NAME: A\u8232 SURVEY DATE: 7 10 79\'a0 COMMENT:Entrance Passage\u8232 SURVEY TEAM:\u8232 D.SMITH,R.BROWN,S.MURRAY\u8232 DECLINATION: 1.00\'a0 FORMAT: DDDDLUDRADLNF\'a0 CORRECTIONS: 2.00 3.00 4.00\'a0CORRECTIONS2: 5.0 6.0
+\f0\b0\fs24 \
+
+\f1\b\fs18 FROM TO\'a0 LENGTH BEARING\'a0 DIP\'a0\'a0\'a0 LEFT\'a0\'a0\'a0 UP\'a0 DOWN RIGHT
+\f2\b0\fs24 \
+
+\f1\b\fs18 A2\'a0 A1\'a0\'a0 12.00\'a0 135.00\'a0\'a0 5.00\'a0 0.00\'a0 4.00\'a0 0.50\'a0 0.00\'a0 Big Room\uc0\u8232 A2\'a0 A3\'a0\'a0 41.17\'a0\'a0 46.00\'a0\'a0 2.00\'a0 0.00\'a0 0.00\'a0 0.00\'a0 0.00\'a0 #|PC# Room\u8232 A3\'a0 A4\'a0\'a0\'a0 4.25\'a0\'a0 15.00 -85.00\'a0 5.00\'a0 3.50\'a0 0.75\'a0 0.50\u8232 A4\'a0 A5\'a0\'a0 22.50\'a0 129.00 -21.00\'a0 0.00\'a0 0.00\'a0 0.00\'a0 0.00\'a0 #|PX#\u8232 <form feed>\u8232 SECRET CAVE\u8232 SURVEY NAME: B\u8232 SURVEY DATE: 7 10 79\'a0 COMMENT:Big Room Survey\u8232 SURVEY TEAM:\u8232 D.SMITH,R.BROWN,S.MURRAY\u8232 DECLINATION: 1.00\'a0 FORMAT: DDDDLUDRADLNT\'a0 CORRECTIONS: 2.00 3.00 4.00\'a0CORRECTIONS2: 5.0 6.0\'a0
+\f2\b0\fs24 \
+
+\f1\b\fs18 FROM TO\'a0\'a0 LEN\'a0 BEAR\'a0\'a0 INC LEFT\'a0\'a0 UP DOWN RIGHT AZM2 INC2 FLAGS COMMENTS
+\f2\b0\fs24 \
+
+\f1\b\fs18 B2\'a0 B1\'a0 13.0\'a0 35.0\'a0 15.0 -9.9\'a0 2.0\'a0 1.5\'a0 1.0 215.0 -15.0\'a0\'a0\'a0\'a0\'a0 Side Passage\uc0\u8232 B2\'a0 B3\'a0 22.1\'a0 16.0\'a0 22.0\'a0 6.0\'a0 1.0\'a0 0.0\'a0 2.0 196.0 -22.0 #|PC#\u8232 B3\'a0 B4\'a0\'a0 3.2\'a0 11.0 -82.0\'a0 2.0\'a0 2.5\'a0 2.7\'a0 3.5 191.0\'a0 82.0\u8232 B4\'a0 B5\'a0 23.5 111.0\'a0 11.0\'a0 0.0\'a0 0.0\'a0 1.0\'a0 1.0 291.0 -11.0 #|PX#\u8232 <form feed>
+\f0\b0\fs24 \
+\pard\pardeftab720\sa240
+
+\fs20 \cf0 \'a0
+\b 1. Individual Surveys. 
+\b0 You will notice that the file contains data for two individual surveys. COMPASS survey files can have any number of surveys within a single file. All surveys end with a Form Feed character on a separate line. Thus, if there are multiple surveys in a file, each survey is separated by a form feed. A Form Feed character is the equivalent of a Control-L in some editors or 0C hex. If you choose to edit a survey file with a text editor, make sure you understand how to enter a Form Feed and how it is displayed. Otherwise, it is easy to accidentally delete the Forms Feeds, which will corrupt the file.
+\fs24 \
+
+\fs20 \'a0
+\b 2. The Header.
+\b0  Each survey begins with a header that gives information about the survey that will follow. The following list describes each header item:
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 a. Cave Name (Line 1).
+\b0  The first line contains the cave name. It can be any alphanumeric characters up to 80 characters in length. It is terminated by a carriage return and line feed. For the most part, the software ignores the cave name.
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 b. Survey Name (Line 2). 
+\b0 The survey name is usually the alphabetic prefix that is attached to each survey station. For example, if the survey name is AB, then the individual survey stations will be AB1, AB2, AB3, etc. The survey name field begins with the string: "SURVEY NAME: ", which is followed by the actual survey name. The name can be any printable ASCII character and is terminated by the first white space character, usually end-of-line characters. It can be up to 12 characters in length.
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 c. Survey Date (Line 3).
+\b0  The date field begins with the string "SURVEY DATE: " and is followed by three numerical date fields: month, day and year. The year can be a two digit or four digit number, i.e. 1992 or 92.
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 d. Survey Comment (Line 3).
+\b0  For backward compatibility, this item is optional. It is used to describe the survey in more detail than the Survey Name. The survey comment begins with the string "COMMENT:" and is terminated by the Carriage Return at the end of the line. The actual comment begins immediately after the colon ":" character.
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 e. Survey Team (Line 4).
+\b0  The survey team fields consists of two lines. The first line contains the string: "SURVEY TEAM:" No other information appears on this line. The next line holds the actual survey team information. The survey team information can be up to 100 characters in length. There is no specific format to this information. It is up to the user.
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 f. Declination (Line 5).
+\b0  The declination field gives the magnetic declination for a particular region. It is used to compensate for local magnetic anomalies and differences between compasses. The declination field begins with the string "DECLINATION: " followed by a floating point number. This number is added to the azimuth of each shot in the survey.
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 g. File Format (Line 5).
+\b0  For backward compatibility, this item is optional. This field specifies the format of the original survey notebook. Since COMPASS converts the file to fixed format, this information is used by programs like the editor to display and edit the data in original form. The field begins with the string: "FORMAT: " followed by 11, 12 or 13 upper case alphabetic characters. Each character specifies a particular part of the format. Here is list of the format items:
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trbrdrt\brdrnil \trbrdrl\brdrnil \trbrdrt\brdrnil \trbrdrr\brdrnil 
+\clvertalt\clvertalbase \clshdrawnil \clwWidth960\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx4320
+\clvertalt\clvertalbase \clshdrawnil \clwWidth4620\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\fs26 \cf0 I.
+\fs24 \cell 
+\pard\intbl\itap1\pardeftab720
+
+\b\fs20 \cf0 Bearing Units: 
+\b0 D = Degrees, Q = quads, R = Grads
+\fs24 \cell \lastrow\row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trbrdrt\brdrnil \trbrdrl\brdrnil \trbrdrt\brdrnil \trbrdrr\brdrnil 
+\clvertalt\clvertalbase \clshdrawnil \clwWidth960\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx4320
+\clvertalt\clvertalbase \clshdrawnil \clwWidth5780\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\fs26 \cf0 II.
+\fs24 \cell 
+\pard\intbl\itap1\pardeftab720
+
+\b\fs20 \cf0 Length Units
+\b0 : D = Decimal Feet, I = Feet and Inches M = Meters
+\fs24 \cell \lastrow\row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trbrdrt\brdrnil \trbrdrl\brdrnil \trbrdrt\brdrnil \trbrdrr\brdrnil 
+\clvertalt\clvertalbase \clshdrawnil \clwWidth960\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx4320
+\clvertalt\clvertalbase \clshdrawnil \clwWidth2880\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\fs26 \cf0 III.
+\fs24 \cell 
+\pard\intbl\itap1\pardeftab720
+
+\b\fs20 \cf0 Passage Units:
+\b0  Same as length
+\fs24 \cell \lastrow\row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth10220\trftsWidth3 \trbrdrt\brdrnil \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt\clvertalbase \clshdrawnil \clwWidth960\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx4320
+\clvmgf \clvertalt\clvertalbase \clshdrawnil \clwWidth9260\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\fs20 \cf0 I
+\fs26 V.
+\fs24 \cell 
+\pard\intbl\itap1\pardeftab720
+
+\b\fs20 \cf0 Inclination Units
+\b0 : D = Degrees, G = Percent Grade, M = Degrees and Minutes,\
+\'a0R = Grads, W = Depth Gauge
+\fs24 \cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth10220\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt\clvertalbase \clshdrawnil \clwWidth960\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx4320
+\clvmrg \clvertalt\clvertalbase \clshdrawnil \clwWidth9260\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+\cf0 \'a0\cell 
+\pard\intbl\itap1\cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth10220\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt\clvertalbase \clshdrawnil \clwWidth960\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx4320
+\clvertalt\clvertalbase \clshdrawnil \clwWidth9260\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\fs26 \cf0 V.
+\fs24 \cell 
+\pard\intbl\itap1\pardeftab720
+
+\b\fs20 \cf0 Passage Dimension Order:
+\b0  U = Up, D = Down, R = Right L = Left
+\fs24 \cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth10220\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt\clvertalbase \clshdrawnil \clwWidth960\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx4320
+\clvertalt\clvertalbase \clshdrawnil \clwWidth9260\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\fs26 \cf0 VI.
+\fs24 \cell 
+\pard\intbl\itap1\pardeftab720
+
+\b\fs20 \cf0 Passage Dimension Order:
+\b0  U = Up, D = Down, R = Right L = Left
+\fs24 \cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth10220\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt\clvertalbase \clshdrawnil \clwWidth960\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx4320
+\clvertalt\clvertalbase \clshdrawnil \clwWidth9260\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\fs26 \cf0 VII.
+\fs24 \cell 
+\pard\intbl\itap1\pardeftab720
+
+\b\fs20 \cf0 Passage Dimension Order:
+\b0  U = Up, D = Down, R = Right L = Left
+\fs24 \cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth10220\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt\clvertalbase \clshdrawnil \clwWidth960\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx4320
+\clvertalt\clvertalbase \clshdrawnil \clwWidth9260\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\fs26 \cf0 VIII.
+\fs24 \cell 
+\pard\intbl\itap1\pardeftab720
+
+\b\fs20 \cf0 Passage Dimension Order:
+\b0  U = Up, D = Down, R = Right L = Left
+\fs24 \cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth10220\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt\clvertalbase \clshdrawnil \clwWidth960\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx4320
+\clvertalt\clvertalbase \clshdrawnil \clwWidth9260\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\fs26 \cf0 IX.
+\fs24 \cell 
+\pard\intbl\itap1\pardeftab720
+
+\b\fs20 \cf0 Shot Item Order
+\b0 : L = Length, A = Azimuth, D = Inclination
+\fs24 \cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth10220\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt\clvertalbase \clshdrawnil \clwWidth960\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx4320
+\clvertalt\clvertalbase \clshdrawnil \clwWidth9260\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\fs26 \cf0 X.
+\fs24 \cell 
+\pard\intbl\itap1\pardeftab720
+
+\b\fs20 \cf0 Shot Item Order
+\b0 : L = Length, A = Azimuth, D = Inclination
+\fs24 \cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth10220\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt\clvertalbase \clshdrawnil \clwWidth960\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx4320
+\clvertalt\clvertalbase \clshdrawnil \clwWidth9260\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\fs26 \cf0 XI.
+\fs24 \cell 
+\pard\intbl\itap1\pardeftab720
+
+\b\fs20 \cf0 Shot Item Order
+\b0 : L = Length, A = Azimuth, D = Inclination
+\fs24 \cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth10220\trftsWidth3 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt\clvertalbase \clshdrawnil \clwWidth960\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx4320
+\clvertalt\clvertalbase \clshdrawnil \clwWidth9260\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\fs26 \cf0 XII.
+\fs24 \cell 
+\pard\intbl\itap1\pardeftab720
+
+\b\fs20 \cf0 Backsight
+\b0 : B=Redundant, N or empty=No Redundant Backsights
+\fs24 \cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trwWidth10220\trftsWidth3 \trbrdrl\brdrnil \trbrdrt\brdrnil \trbrdrr\brdrnil 
+\clvertalt\clvertalbase \clshdrawnil \clwWidth960\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx4320
+\clvertalt\clvertalbase \clshdrawnil \clwWidth9260\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+
+\fs26 \cf0 XIII.
+\fs24 \cell 
+\pard\intbl\itap1\pardeftab720
+
+\b\fs20 \cf0 LRUD Association:
+\b0  F=From Station, T=To Station
+\fs24 \cell \lastrow\row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trbrdrt\brdrnil \trbrdrl\brdrnil \trbrdrt\brdrnil \trbrdrr\brdrnil 
+\clvertalt\clvertalbase \clshdrawnil \clwWidth960\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx4320
+\clvertalt\clvertalbase \clshdrawnil \clwWidth80\clftsWidth3 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720
+\cf0 \'a0\cell 
+\pard\intbl\itap1\pardeftab720
+\cf0 \'a0\cell \lastrow\row
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 h. Instrument Correction Factors (Line 5).
+\b0  For backward compatibility, this item is optional. The item begins with the string "CORRECTIONS:" The Instrument Correction Factors are used to correct defective instrument readings. There are three numbers that are used to correct the compass, inclinometer and tape readings respectively. These values are added to the azimuth, inclination and length values for the survey. The azimuth and inclination readings are in degrees and the length value is in feet.
+\fs24 \
+\'a0\
+
+\b\fs20 i. Back Sight Instrument Correction Factors (Line 5).
+\b0  For backward compatibility, this item is optional. The item begins with the string "CORRECTIONS2:" The Instrument Correction Factors are used to correct defective instrument readings for Back Sights There are two numbers that are used to correct the compass and inclinometer readings respectively. These values are added to the back sight azimuth and inclination values for the survey. The azimuth and inclination readings are in degrees.
+\fs24 \
+\pard\pardeftab720\sa240
+
+\b\fs20 \cf0 3. Survey Shots.
+\b0  Following the header are three lines which serve to separate the header from the shots. The middle line identifies each field in the shot. Their purpose is only to make the file more readable. They are ignored by all software.
+\fs24 \
+\pard\pardeftab720\sa240
+
+\fs20 \cf0 Following the separating lines is a series of shots. Each shot is contained on a single line. There are eleven possible items on the line. Some items are optional.
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 a. From Station.
+\b0  The first item on the line is the "from" survey station name. It consists of up to 12 printable ASCII characters. It is terminated by the first white space character. It is case sensitive. In the normal situation, the "from" station is defined as the station whose location has already been established, whereas the "to" station is the station whose location is about to be established. In the case of a backsight, the reverse is true.
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 b. To Station.
+\b0  The second item on the line is the "to" survey station name. It consists of up to 12 printable ASCII characters. It is terminated by the first white space character. It is case sensitive.
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 c. Length.
+\b0  This is the length of the shot between the from and to stations. It is a single floating point number of virtually any format. It is terminated by the first white space character. It specifies length in decimal feet.
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 d. Bearing.
+\b0  This item specifies the compass angle of the shot. It is a single floating point number of virtually any format. It is terminated by the first white space character. It specifies bearing in decimal degrees.
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 e. Inclination.
+\b0  This is the angle of inclination of the shot. It is a single floating point number of virtually any format. It is terminated by the first white space character. It specifies inclination in decimal degrees.
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 f. Left.
+\b0  This is the distance between the station and the left wall. It is a single floating point number of virtually any format. It is terminated by the first white space character. It specifies distance in decimal feet.
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 g. Up.
+\b0  This is the distance between the station and the ceiling. It is a single floating point number of virtually any format. It is terminated by the first white space character. It specifies distance in decimal feet.
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 h. Down
+\b0 . This is the distance between the station and the floor. It is a single floating point number of virtually any format. It is terminated by the first white space character. It specifies distance in decimal feet.
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 i. Right.
+\b0  This is the distance between the station and the right wall. It is a single floating point number of virtually any format. It is terminated by the first white space character. It specifies distance in decimal feet.
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 j. Azm2.
+\b0  For backward compatibility, this is an optional item. It is turned on or off with the File Format item in the header. If redundant backsights are enabled, this is the backsighted azimuth value. The second survey in the listing above has backsights enabled. This value is always stored uncorrected, so it should be 180 degrees from the bearing. An editor may choose to display it as a corrected backsight, in which case, it should equal the bearing.
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 Note:
+\b0  redundant backsights are different from ordinary backsights. A redundant backsight consists of an extra compass and inclination reading. This is normally done to increase the accuracy of a survey. An ordinary backsight occurs where it is more convenient to measure a shot in reverse order. For example, you could do an ordinary backsight when there is a rock that interferes with the "from" station. In COMPASS, ordinary backsights are simply entered in reverse. COMPASS is expected to notice that the shot is reversed and handle it.
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 k. Inc2.
+\b0  For backward compatibility, this is an optional item. It is turned on or off with the File Format item in the header. If redundant backsights are enabled, this is the backsighted inclination value. The second survey in the listing above has backsights enabled. This value is always stored uncorrected, so it should be the same value as the inclination with sign changed. An editor may choose to display it as a corrected backsight, in which case, it should equal the inclination.
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 l. Flags
+\b0 . For backward compatibility, this is an optional item. It specifies a set of flags that modify the way in which this shot is processed. To distinguish the flag field from the comment field that follows, flags must be preceded by two characters, a pound sign and a vertical bar: "#|". This is followed by up to three printable characters. The flag field is terminated by a single pound sign "#" character. At this time there are four flags that are recognized:
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\pardeftab720\li1920
+
+\fs20 \cf0 L - Exclude this shot from length calculations.
+\fs24 \
+
+\fs20 P - Exclude this shot from plotting.
+\fs24 \
+
+\fs20 X - Exclude this shot from all processing.
+\fs24 \
+
+\fs20 C - Do not adjust this shot when closing loops.
+\fs24 \
+\pard\pardeftab720\li960
+
+\fs20 \cf0 \'a0
+\fs24 \
+\pard\pardeftab720\li960
+
+\b\fs20 \cf0 m. Comments.
+\b0  For backward compatibility, this field is optional. It contains a comment pertaining to this shot. It can be up to 80 characters in length, and it terminates at the end-of-line.
+\fs24 \
+\pard\pardeftab720\sa240
+
+\b\fs20 \cf0 Line Length.
+\b0  Lines in survey files may be longer than the normal computer screen width. When working with them in non-COMPASS editors, be sure that the editor does not wrap the lines around, or the file may be corrupted when saved.
+\fs24 \
+}
