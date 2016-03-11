@@ -112,4 +112,4 @@ License
 -------
 
 Davies is Free / Open Source software licensed under the `MIT License <http://opensource.org/licenses/MIT>`_,
-and is copyright (C) 2013 - 2015 Myotisoft LLC.
+and is copyright (C) 2013 - 2016 Myotisoft LLC.
