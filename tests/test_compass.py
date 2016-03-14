@@ -139,3 +139,12 @@ class OldData(unittest.TestCase):
     def test_old(self):
         fname = os.path.join(DATA_DIR, '1998.DAT')
         dat = DatFile.read(fname)
+
+
+class DateFormatTest(unittest.TestCase):
+
+    def test_date_format(self):
+        date = datetime.date(2016, 3, 14)
+        survey = Survey(date=date)
+        survey._serialize()  # Davies 0.1.0 blows up on Windows with "Invalid format string"
+        
