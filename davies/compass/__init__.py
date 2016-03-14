@@ -101,7 +101,7 @@ class Shot(OrderedDict):
 class Survey(object):
     """Representation of a Compass Survey object. A Survey is a container for :class:`Shot` objects."""
 
-    def __init__(self, name=None, date=None, comment=None, team=None, declination=None, lrud_format=None, corrections=None, corrections2=None, cave_name=None, shot_header=None, shots=None):
+    def __init__(self, name=None, date=None, comment=None, team=None, declination=0.0, lrud_format=None, corrections=(0.0,0.0,0.0), corrections2=(0.0,0.0), cave_name=None, shot_header=(), shots=None):
         self.name = name
         self.date = date
         self.comment = comment
@@ -153,10 +153,11 @@ class Survey(object):
         return False
 
     def _serialize(self):
+        date = self.date.strftime('%m %d %Y').lstrip('0') if self.date else ''
         lines = [
             self.cave_name,
             'SURVEY NAME: %s' % self.name,
-            'SURVEY DATE: %s  COMMENT:%s' % (self.date.strftime('%-m %d %Y'), self.comment),
+            'SURVEY DATE: %s  COMMENT:%s' % (date, self.comment),
             'SURVEY TEAM:',
             ','.join(self.team) if self.team else '',
             'DECLINATION: %7.2f  FORMAT: %s  CORRECTIONS:  %s  CORRECTIONS2:  %s' %
