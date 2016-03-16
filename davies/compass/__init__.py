@@ -10,11 +10,16 @@ from collections import OrderedDict
 
 log = logging.getLogger(__name__)
 
-__all__ = 'Project', 'DatFile', 'Survey', 'Shot', 'UTMLocation', 'Exclude', \
+__all__ = 'Project', 'UTMLocation', 'UTMDatum', \
+          'DatFile', 'Survey', 'Shot', 'Exclude', \
           'CompassProjectParser', 'CompassDatParser', 'ParseException'
 
 
 # Compass OO Model
+
+
+DEFAULT_HEADER = ['FROM', 'TO', 'LENGTH', 'BEARING', 'INC', 'LEFT', 'UP', 'DOWN', 'RIGHT', 'FLAGS', 'COMMENTS']
+DEFAULT_HEADER_BACKSIGHTS = ['FROM', 'TO', 'LENGTH', 'BEARING', 'INC', 'LEFT', 'UP', 'DOWN', 'RIGHT', 'AZM2', 'INC2', 'FLAGS', 'COMMENTS']
 
 
 class Exclude:
@@ -101,7 +106,7 @@ class Shot(OrderedDict):
 class Survey(object):
     """Representation of a Compass Survey object. A Survey is a container for :class:`Shot` objects."""
 
-    def __init__(self, name=None, date=None, comment=None, team=None, declination=0.0, lrud_format=None, corrections=(0.0,0.0,0.0), corrections2=(0.0,0.0), cave_name=None, shot_header=(), shots=None):
+    def __init__(self, name='', date=None, comment='', team='', declination=0.0, lrud_format=None, corrections=(0.0,0.0,0.0), corrections2=(0.0,0.0), cave_name='', shot_header=(), shots=None):
         self.name = name
         self.date = date
         self.comment = comment
@@ -133,6 +138,13 @@ class Survey(object):
         """Surveyed length which does not count toward the included total"""
         return sum([shot.length for shot in self.shots if Exclude.LENGTH in shot.flags or Exclude.TOTAL in shot.flags])
 
+    @property
+    def backsights_enabled(self):
+        for shot in self:
+            if 'AZM2' in shot or 'INC2' in shot:
+                return True
+        return False
+
     def __str__(self):
         return self.name
 
@@ -154,6 +166,11 @@ class Survey(object):
 
     def _serialize(self):
         date = self.date.strftime('%m %d %Y').lstrip('0') if self.date else ''
+        if self.shot_header:
+            header = self.shot_header
+        else:
+            header = DEFAULT_HEADER_BACKSIGHTS if self.backsights_enabled else DEFAULT_HEADER
+        
         lines = [
             self.cave_name,
             'SURVEY NAME: %s' % self.name,
@@ -165,12 +182,13 @@ class Survey(object):
                  '%.2f %.2f %.2f' % tuple(self.corrections),
                  '%.2f %.2f' % tuple(self.corrections2)),
             '',
-            '\t'.join(self.shot_header),
+            '\t'.join(header),
             '',
         ]
         for shot in self.shots:
             vals = []
-            for k,v in shot.items():  # FIXME: this depends on OrderedDict ordering, ensure we match `shot_header`
+            for k in header:
+                v = shot.get(k, None)
                 if k in ('BEARING', 'INC', 'AZM2', 'INC2', 'LENGTH'):
                     vals.append('%7.2f' % (v if v is not None else -999.0))
                 elif k in ('LEFT', 'RIGHT', 'UP', 'DOWN'):
@@ -197,12 +215,14 @@ class DatFile(object):
     """
     Representation of a Compass .DAT File. A DatFile is a container for :class:`Survey` objects.
 
-    :ivar name:    (string) the DatFile's "name", not necessarily related to its filename
-    :ivar surveys: (list of :class:`Survey`)
+    :ivar name:     (string) the DatFile's "name", not necessarily related to its filename
+    :ivar filename: (string) underlying .DAT file's filename
+    :ivar surveys:  (list of :class:`Survey`)
     """
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, filename=None):
         self.name = name
+        self.filename = filename
         self.surveys = []
 
     def add_survey(self, survey):
@@ -248,24 +268,32 @@ class DatFile(object):
         """Read a .DAT file and produce a `Survey`"""
         return CompassDatParser(fname).parse()
 
-    def write(self, outf):
-        """Write a `Survey` to the specified .DAT file"""
-        with codecs.open(outf, 'wb', 'windows-1252') as outf:
+    def write(self, outfname=None):
+        """Write or overwrite a `Survey` to the specified .DAT file"""
+        outfname = outfname or self.filename
+        with codecs.open(outfname, 'wb', 'windows-1252') as outf:
             for survey in self.surveys:
                 outf.write('\r\n'.join(survey._serialize()))
                 outf.write('\r\n'+'\f'+'\r\n')  # ASCII "form feed" ^L
             outf.write('\x1A')  # ASCII "sub" ^Z marks EOF
 
 
+class UTMDatum:
+    """Enumeration of common geographic datums."""
+    NAD27 = 'North American 1927'
+    NAD83 = 'North American 1983'
+    WGS84 = 'WGS 1984'
+
+
 class UTMLocation(object):
     """Represents a UTM-based coordinate for fixed stations."""
 
-    def __init__(self, easting, northing, elevation, zone=None, convergence=None, datum=None):
-        self.easting = easting
-        self.northing = northing
-        self.elevation = elevation
-        self.zone = int(zone) if zone is not None else None
-        self.convergence = convergence
+    def __init__(self, easting, northing, elevation=0.0, zone=0, datum=None, convergence=0.0):
+        self.easting = float(easting)
+        self.northing = float(northing)
+        self.elevation = float(elevation)
+        self.zone = int(zone)
+        self.convergence = float(convergence)
         self.datum = datum
 
     @property
@@ -280,19 +308,51 @@ class Project(object):
     """
     Representation of a Compass .MAK Project file. A Project is a container for :class:`DatFile` objects.
 
-    :ivar name:         (string)
-    :ivar linked_files: (list of :class:`DatFile`)
+    :ivar name:          (string)
+    :ivar filename:      (string)
+    :ivar base_location: (:class:`UTMLocation`)
+    :ivar linked_files:  (list of :class:`DatFile`)
+    :ivar fixed_stations: (map of :class:`DatFile` -> station -> :class:`UTMLocation`)
     """
-
-    def __init__(self, name=None, base_location=None, file_params=None):
+    
+    def __init__(self, name=None, filename=None):
         self.name = name
-        self.base_location = base_location
-        self.file_params = file_params
+        self.filename = filename
+        
         self.linked_files = []
+        self.fixed_stations = {}  # datfile -> station -> UTMLocation
+
+        self.base_location = None
+        self._utm_zone = None
+        self._utm_datum = None
+        self._utm_convergence = None
+
+        # TODO: file parameters
+        self.override_lrud = False
+        self.lrud_association = 'FROM'  # or 'TO'
+
+    def set_base_location(self, location):
+        """Configure the project's base location"""
+        self.base_location = location
+        self._utm_zone = location.zone
+        self._utm_datum = location.datum
+        self._utm_convergence = location.convergence
 
     def add_linked_file(self, datfile):
         """Add a :class:`DatFile` to :attr:`linked_files`."""
         self.linked_files.append(datfile)
+
+    def add_linked_station(self, datfile, station, location=None):
+        """Add a linked or fixed station"""
+        if datfile not in self.fixed_stations:
+            self.fixed_stations[datfile] = {station: location}
+        else:
+            self.fixed_station[datfile][station] = location
+
+        if location and not self.base_location:
+            self._utm_zone = location.zone
+            self._utm_datum = location.datum
+            self._utm_convergence = location.convergence
 
     def __len__(self):
         return len(self.linked_files)
@@ -312,8 +372,49 @@ class Project(object):
         """Read a .MAK file and produce a `Project`"""
         return CompassProjectParser(fname).parse()
 
-    def write(self, outf):
-        raise NotImplementedError()
+    def _serialize(self):
+        lines = []
+        if self.base_location:
+            loc = self.base_location
+            lines.append('@%.3f,%.3f,%.3f,%d,%.3f;' % (loc.easting, loc.northing, loc.elevation, loc.zone, loc.convergence))
+            lines.append('&%s;' % loc.datum)
+        
+        override = 'O' if self.override_lrud else 'o'
+        association = 't' if self.lrud_association == 'FROM' else 'T'
+        lines.append('!%s%s;' % (override, association))
+
+        if self._utm_zone:
+            lines.append('$%d;' % self._utm_zone)
+        if self._utm_datum:
+            lines.append('&%s;' % self._utm_datum)
+        if self._utm_convergence:
+            lines.append('%%%.2f;' % self._utm_convergence)
+
+        for dat in self.linked_files:
+            datfname = dat.filename if type(dat) == DatFile else dat
+            if not datfname.lower().endswith('.dat'):
+                raise ValueError('Unable to locate MAK file "%s"' % dat)
+            if dat not in self.fixed_stations:
+                lines.append('#%s;' % datfname)
+            else:
+                lines.append('#%s,' % datfname)
+                for station, loc in self.fixed_stations[dat].items():
+                    if loc:
+                        lines.append('\t%s[m,%.3f,%.3f,%.3f,],' % (station, loc.easting, loc.northing, loc.elevation))
+                    else:
+                        lines.append('\t%s,' % station)
+                lines.append(';')
+        
+        return lines
+
+    def write(self, outfilename=None):
+        """Write or overwrite this .MAK file"""
+        outfilename = outfilename or self.filename
+        if not outfilename:
+            raise ValueError('Unable to write MAK file without a filename')
+        with codecs.open(outfilename, 'wb', 'windows-1252') as outf:
+            outf.write('\r\n'.join(self._serialize()))
+            #outf.write('\x1A')  # ASCII "sub" ^Z marks EOF
 
 
 
@@ -454,7 +555,7 @@ class CompassDatParser(object):
     def parse(self):
         """Parse our data file and return a :class:`DatFile` or raise :exc:`ParseException`."""
         log.debug("Parsing Compass .DAT file %s ...", self.datfilename)
-        datobj = DatFile(name_from_filename(self.datfilename))
+        datobj = DatFile(name_from_filename(self.datfilename), filename=self.datfilename)
 
         with codecs.open(self.datfilename, 'rb', 'windows-1252') as datfile:
             full_contents = datfile.read()
@@ -534,7 +635,7 @@ class CompassProjectParser(object):
 
                 elif header == '!':
                     value = value.rstrip(';')
-                    file_params = set(value.upper())
+                    #file_params = set(value)  # TODO
 
                 elif header == '#':
                     if value.endswith(';'):
@@ -543,9 +644,10 @@ class CompassProjectParser(object):
                     else:
                         prev = value
 
-            log.debug("Project:  base_loc=%s  params=%s  linked_files=%s", base_location, file_params, linked_files)
+            log.debug("Project:  base_loc=%s  linked_files=%s", base_location, linked_files)
 
-            project = Project(name_from_filename(self.makfilename), base_location, file_params)
+            project = Project(name_from_filename(self.makfilename), filename=self.makfilename)
+            project.set_base_location(base_location)
 
             for linked_file in linked_files:
                 # TODO: we need to support case-insensitive path resolution on case-sensitive filesystems
