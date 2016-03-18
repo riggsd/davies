@@ -31,21 +31,25 @@ class Exclude:
 
 
 class Shot(OrderedDict):
-    """Representation of a single shot in a Compass Survey."""
+    """
+    Representation of a single shot in a Compass Survey.
+
+    See: `Compass Survey Data File Format <http://www.fountainware.com/compass/Documents/FileFormats/SurveyDataFormat.htm>`_
+    """
     # FIXME: support compass, back-compass, and tape corrections
 
     def __init__(self, *args, **kwargs):
         """
         :kwarg FROM:    (str) from station
         :kwarg TO:      (str) to station
-        :kwarg BEARING: (float) forward compass
-        :kwarg AZM2:    (float) back compass
-        :kwarg INC:     (float) forward inclination
-        :kwarg INC2:    (float) back inclination
-        :kwarg LENGTH:  (float) distance
+        :kwarg BEARING: (float) forward compass in **decimal degrees**
+        :kwarg AZM2:    (float) back compass in **decimal degrees**
+        :kwarg INC:     (float) forward inclination in **decimal degrees**
+        :kwarg INC2:    (float) back inclination in **decimal degrees**
+        :kwarg LENGTH:  (float) distance in **decimal feet**
         :kwarg FLAGS:   (collection of :class:`Exclude`) shot exclusion flags
-        :kwarg COMMENTS: (str)
-        :kwarg declination: (float) magnetic declination
+        :kwarg COMMENTS: (str) text comments, up to 80 characters long
+        :kwarg declination: (float) magnetic declination in decimal degrees
 
         :ivar declination: (float) set or get magnetic declination adjustment
         """
@@ -104,19 +108,65 @@ class Shot(OrderedDict):
 
 
 class Survey(object):
-    """Representation of a Compass Survey object. A Survey is a container for :class:`Shot` objects."""
+    """
+    Representation of a Compass Survey object. A Survey is a container for :class:`Shot` objects.
 
-    def __init__(self, name='', date=None, comment='', team='', declination=0.0, lrud_format=None, corrections=(0.0,0.0,0.0), corrections2=(0.0,0.0), cave_name='', shot_header=(), shots=None):
+    See: `Compass Survey Data File Format <http://www.fountainware.com/compass/Documents/FileFormats/SurveyDataFormat.htm>`_
+
+    :ivar file_format: (str) format string which defines how Compass will view/edit underlying \
+                             survey data; setting this property will in turn set all the other file \
+                             format properties listed below; should be a string of 11 - 13 characters
+    :ivar bearing_units: (chr) 'D'
+    :ivar length_units: (chr) 
+    :ivar passage_units: (chr) 
+    :ivar inclination_units: (chr) 
+    :ivar passage_dimension_order: (list of chr)
+    :ivar shot_item_order: (list of chr) 
+    :ivar backsight: (chr) 
+    :ivar lrud_association: (chr) 
+    """
+
+    def __init__(self, name='', date=None, comment='', team='', declination=0.0, file_format=None, corrections=(0.0,0.0,0.0), corrections2=(0.0,0.0), cave_name='', shot_header=(), shots=None):
         self.name = name
         self.date = date
         self.comment = comment
         self.team = team
         self.declination = declination
-        self.lrud_format = lrud_format  # TODO: LRUD and units not supported
         self.corrections, self.corrections2 = corrections, corrections2  # TODO: instrument corrections not supported
         self.cave_name = cave_name
         self.shot_header = shot_header  # FIXME: this ordering is not optional!
         self.shots = shots if shots else []
+
+        self.bearing_units = 'D'
+        self.length_units = 'D'
+        self.passage_units = 'D'
+        self.inclination_units = 'D'
+        self.passage_dimension_order = ['U','D','L','R']
+        self.shot_item_order = ['L', 'A', 'D']
+        self.backsight = 'N'
+        self.lrud_association = 'F'
+        if file_format:
+            self.file_format = file_format
+
+    @property
+    def file_format(self):
+        return '%s%s%s%s%s%s%s%s' % \
+               (self.bearing_units, self.length_units, self.passage_units, self.inclination_units,
+                ''.join(self.passage_dimension_order), ''.join(self.shot_item_order),
+                self.backsight, self.lrud_association)
+
+    @file_format.setter
+    def file_format(self, fmt):
+        if len(fmt) < 11:
+            raise ValueError(fmt)
+        self.bearing_units = fmt[0]
+        self.length_units = fmt[1]
+        self.passage_units = fmt[2]
+        self.inclination_units = fmt[3]
+        self.passage_dimension_order = list(fmt[4:8])
+        self.shot_item_order = list(fmt[8:11])
+        self.backsight = fmt[11] if len(fmt) > 11 else 'N'
+        self.lrud_association = fmt[12] if len(fmt) > 12 else 'F'
 
     def add_shot(self, shot):
         """Add a shot dictionary to :attr:`shots`, applying this survey's magnetic declination"""
@@ -178,7 +228,7 @@ class Survey(object):
             'SURVEY TEAM:',
             ','.join(self.team) if self.team else '',
             'DECLINATION: %7.2f  FORMAT: %s  CORRECTIONS:  %s  CORRECTIONS2:  %s' %
-                (self.declination, self.lrud_format or '',
+                (self.declination, self.file_format,
                  '%.2f %.2f %.2f' % tuple(self.corrections),
                  '%.2f %.2f' % tuple(self.corrections2)),
             '',
@@ -189,8 +239,10 @@ class Survey(object):
             vals = []
             for k in header:
                 v = shot.get(k, None)
-                if k in ('BEARING', 'INC', 'AZM2', 'INC2', 'LENGTH'):
+                if k in ('BEARING', 'INC', 'AZM2', 'INC2'):
                     vals.append('%7.2f' % (v if v is not None else -999.0))
+                elif k == 'LENGTH':
+                    vals.append('%8.3f' % (v if v is not None else -999.0))
                 elif k in ('LEFT', 'RIGHT', 'UP', 'DOWN'):
                     vals.append('%7.2f' % (v if v is not None and v != float('inf') else -9.90))
                 elif k in ('FROM', 'TO'):
@@ -214,6 +266,8 @@ class Survey(object):
 class DatFile(object):
     """
     Representation of a Compass .DAT File. A DatFile is a container for :class:`Survey` objects.
+
+    See: `Compass Survey Data File Format <http://www.fountainware.com/compass/Documents/FileFormats/SurveyDataFormat.htm>`_
 
     :ivar name:     (string) the DatFile's "name", not necessarily related to its filename
     :ivar filename: (string) underlying .DAT file's filename
@@ -308,6 +362,8 @@ class Project(object):
     """
     Representation of a Compass .MAK Project file. A Project is a container for :class:`DatFile` objects.
 
+    See: `Compass Project File Format <http://www.fountainware.com/compass/Documents/FileFormats/ProjectFileFormat.htm>`_
+    
     :ivar name:          (string)
     :ivar filename:      (string)
     :ivar base_location: (:class:`UTMLocation`)
@@ -518,7 +574,7 @@ class CompassSurveyParser(object):
 
         survey = Survey(name=name, date=date, comment=comment, team=team, cave_name=cave_name,
                         shot_header=shot_header, declination=declination,
-                        lrud_format=fmt, corrections=corrections, corrections2=corrections2)
+                        file_format=fmt, corrections=corrections, corrections2=corrections2)
 
         shots = []
         shot_lines = lines

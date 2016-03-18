@@ -26,7 +26,7 @@ import random
 
 from davies import compass
 from davies import pockettopo
-from davies.survey_math import hd, vd, angle_delta, cartesian_offset
+from davies.survey_math import hd, vd, angle_delta, cartesian_offset, m2f
 
 
 LRUD_DELTA = 60  # cone theta within which a splay will be considered a potential LRUD
@@ -101,18 +101,21 @@ def shot2shot(insurvey, inshot, calculate_lrud=True):
         print '\t', inshot, 'LRUD=', ', '.join(('%0.1f' % v) for v in (left, right, up, down))
         assert(all(v >=0 for v in (left, right, up, down)))
     else:
-        up, down, left, right = -9.90, -9.90, -9.90, -9.90
+        up, down, left, right = None, None, None, None
 
     return compass.Shot([
         ('FROM', inshot['FROM']),
         # Compass requires a named TO station, so we must invent one for splays
         ('TO', inshot['TO'] or '%s.s%03d' % (inshot['FROM'], random.randint(0,1000))),
-        ('LENGTH', inshot.length),
+        ('LENGTH', m2ft(inshot.length)),
         # BEARING/AZM named inconsistently in Davies to reflect each program's arbitrary name. We
         # can't use `inshot.azm` here because we need the "raw" compass value without declination
         ('BEARING', inshot['AZM']),
         ('INC', inshot.inc),
-        ('LEFT', left), ('UP', up), ('DOWN', down), ('RIGHT', right),  # Compass requires this order!
+        ('LEFT', m2ft(left) if left is not None else -9.90),
+        ('UP', m2ft(up) if left is not None else -9.90),
+        ('DOWN', m2ft(down) if left is not None else -9.90),
+        ('RIGHT', m2ft(right) if left is not None else -9.90),  # Compass requires this order!
         # Compass 'L' flag excludes splays from cave length calculation
         ('FLAGS', (compass.Exclude.LENGTH, compass.Exclude.PLOT) if inshot.is_splay else ()),
         # COMMENTS/COMMENT named inconsistently in Davies to reflect each program's arbitrary name
@@ -138,6 +141,9 @@ def pockettopo2compass(txtfilename, exclude_splays=False, calculate_lrud=False):
         outsurvey = compass.Survey(
             insurvey.name, insurvey.date, comment=insurvey.comment, cave_name=cave_name, declination=insurvey.declination
         )
+        outsurvey.length_units = 'M'
+        outsurvey.passage_units = 'M'
+        
         for inshot in insurvey:
             if inshot.is_splay and exclude_splays:
                 continue  # skip
@@ -146,9 +152,6 @@ def pockettopo2compass(txtfilename, exclude_splays=False, calculate_lrud=False):
             outshot = shot2shot(insurvey, inshot, calculate_lrud)
             outsurvey.add_shot(outshot)
 
-        # We have to hack a few Compass details dealing with units and field ordering for now
-        outsurvey.shot_header = outshot.keys()  # FIXME?
-        outsurvey.lrud_format = 'DDDDLRUDLADNF'  # FIXME?
         outfile.add_survey(outsurvey)
 
         # DEBUG
