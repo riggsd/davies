@@ -403,7 +403,7 @@ class Project(object):
         if datfile not in self.fixed_stations:
             self.fixed_stations[datfile] = {station: location}
         else:
-            self.fixed_station[datfile][station] = location
+            self.fixed_stations[datfile][station] = location
 
         if location and not self.base_location:
             self._utm_zone = location.zone
