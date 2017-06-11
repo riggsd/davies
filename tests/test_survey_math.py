@@ -11,7 +11,7 @@ class MathTestCase(unittest.TestCase):
             return True
         self.assertEqual(len(first), len(second))
         for one, two in zip(first, second):
-            self.assertAlmostEquals(one, two, places, msg, delta)
+            self.assertAlmostEqual(one, two, places, msg, delta)
 
 
 class HorizontalDistanceTest(unittest.TestCase):
