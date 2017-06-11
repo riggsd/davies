@@ -5,12 +5,12 @@ python:
     - "3.3"
     - "3.4"
     - "3.5"
+    - "3.6"
     - "pypy"
-    - "pypy3"
+#    - "pypy3"
 
 install:
     - pip install .
-#    - pip install -r requirements
 
 script: python -m unittest discover -s tests
 
