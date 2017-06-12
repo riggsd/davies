@@ -10,11 +10,16 @@ from collections import OrderedDict
 
 log = logging.getLogger(__name__)
 
-__all__ = 'Project', 'DatFile', 'Survey', 'Shot', 'UTMLocation', 'Exclude', \
+__all__ = 'Project', 'UTMLocation', 'UTMDatum', \
+          'DatFile', 'Survey', 'Shot', 'Exclude', \
           'CompassProjectParser', 'CompassDatParser', 'ParseException'
 
 
 # Compass OO Model
+
+
+DEFAULT_HEADER = ['FROM', 'TO', 'LENGTH', 'BEARING', 'INC', 'LEFT', 'UP', 'DOWN', 'RIGHT', 'FLAGS', 'COMMENTS']
+DEFAULT_HEADER_BACKSIGHTS = ['FROM', 'TO', 'LENGTH', 'BEARING', 'INC', 'LEFT', 'UP', 'DOWN', 'RIGHT', 'AZM2', 'INC2', 'FLAGS', 'COMMENTS']
 
 
 class Exclude:
@@ -26,21 +31,25 @@ class Exclude:
 
 
 class Shot(OrderedDict):
-    """Representation of a single shot in a Compass Survey."""
+    """
+    Representation of a single shot in a Compass Survey.
+
+    See: `Compass Survey Data File Format <http://www.fountainware.com/compass/Documents/FileFormats/SurveyDataFormat.htm>`_
+    """
     # FIXME: support compass, back-compass, and tape corrections
 
     def __init__(self, *args, **kwargs):
         """
         :kwarg FROM:    (str) from station
         :kwarg TO:      (str) to station
-        :kwarg BEARING: (float) forward compass
-        :kwarg AZM2:    (float) back compass
-        :kwarg INC:     (float) forward inclination
-        :kwarg INC2:    (float) back inclination
-        :kwarg LENGTH:  (float) distance
+        :kwarg BEARING: (float) forward compass in **decimal degrees**
+        :kwarg AZM2:    (float) back compass in **decimal degrees**
+        :kwarg INC:     (float) forward inclination in **decimal degrees**
+        :kwarg INC2:    (float) back inclination in **decimal degrees**
+        :kwarg LENGTH:  (float) distance in **decimal feet**
         :kwarg FLAGS:   (collection of :class:`Exclude`) shot exclusion flags
-        :kwarg COMMENTS: (str)
-        :kwarg declination: (float) magnetic declination
+        :kwarg COMMENTS: (str) text comments, up to 80 characters long
+        :kwarg declination: (float) magnetic declination in decimal degrees
 
         :ivar declination: (float) set or get magnetic declination adjustment
         """
@@ -99,19 +108,79 @@ class Shot(OrderedDict):
 
 
 class Survey(object):
-    """Representation of a Compass Survey object. A Survey is a container for :class:`Shot` objects."""
+    """
+    Representation of a Compass Survey object. A Survey is a container for :class:`Shot` objects.
 
-    def __init__(self, name=None, date=None, comment=None, team=None, declination=0.0, lrud_format=None, corrections=(0.0,0.0,0.0), corrections2=(0.0,0.0), cave_name=None, shot_header=(), shots=None):
+    See: `Compass Survey Data File Format <http://www.fountainware.com/compass/Documents/FileFormats/SurveyDataFormat.htm>`_
+
+    :ivar file_format: (str) format string which defines how Compass will view/edit underlying \
+                             survey data; setting this property will in turn set all the other file \
+                             format properties listed below; should be a string of 11 - 13 characters
+    :ivar bearing_units: (chr) 'D'
+    :ivar length_units: (chr) 
+    :ivar passage_units: (chr) 
+    :ivar inclination_units: (chr) 
+    :ivar passage_dimension_order: (list of chr)
+    :ivar shot_item_order: (list of chr) 
+    :ivar backsight: (chr) 
+    :ivar lrud_association: (chr) 
+    """
+
+    def __init__(self, name='', date=None, comment='', team='', declination=0.0, file_format=None, corrections=(0.0,0.0,0.0), corrections2=(0.0,0.0), cave_name='', shot_header=(), shots=None):
         self.name = name
         self.date = date
         self.comment = comment
         self.team = team
         self.declination = declination
-        self.lrud_format = lrud_format  # TODO: LRUD and units not supported
         self.corrections, self.corrections2 = corrections, corrections2  # TODO: instrument corrections not supported
         self.cave_name = cave_name
         self.shot_header = shot_header  # FIXME: this ordering is not optional!
         self.shots = shots if shots else []
+
+        self.bearing_units = 'D'
+        self.length_units = 'D'
+        self.passage_units = 'D'
+        self.inclination_units = 'D'
+        self.passage_dimension_order = ['U','D','L','R']
+        self.shot_item_order = ['L', 'A', 'D']
+        self.backsight = 'N'
+        self.lrud_association = 'F'
+        if file_format:
+            self.file_format = file_format
+
+    @property
+    def file_format(self):
+        return '%s%s%s%s%s%s%s%s' % \
+               (self.bearing_units, self.length_units, self.passage_units, self.inclination_units,
+                ''.join(self.passage_dimension_order), ''.join(self.shot_item_order),
+                self.backsight, self.lrud_association)
+
+    @file_format.setter
+    def file_format(self, fmt):
+        if len(fmt) < 11:
+            raise ValueError(fmt)
+        self.bearing_units = fmt[0]
+        self.length_units = fmt[1]
+        self.passage_units = fmt[2]
+        self.inclination_units = fmt[3]
+        self.passage_dimension_order = list(fmt[4:8])
+
+        if len(fmt) < 15:
+            self.shot_item_order = list(fmt[8:11])
+        else:
+            self.shot_item_order = list(fmt[8:13])
+
+        if len(fmt) < 12:
+            self.backsight = 'N'
+        elif len(fmt) > 12:
+            self.backsight = fmt[-2]
+        else:
+            self.backsight = fmt[-1]
+
+        if len(fmt) < 13:
+            self.lrud_association = 'F'
+        else:
+            self.lrud_association = fmt[-1]
 
     def add_shot(self, shot):
         """Add a shot dictionary to :attr:`shots`, applying this survey's magnetic declination"""
@@ -132,6 +201,13 @@ class Survey(object):
     def excluded_length(self):
         """Surveyed length which does not count toward the included total"""
         return sum([shot.length for shot in self.shots if Exclude.LENGTH in shot.flags or Exclude.TOTAL in shot.flags])
+
+    @property
+    def backsights_enabled(self):
+        for shot in self:
+            if 'AZM2' in shot or 'INC2' in shot:
+                return True
+        return False
 
     def __str__(self):
         return self.name
@@ -154,6 +230,11 @@ class Survey(object):
 
     def _serialize(self):
         date = self.date.strftime('%m %d %Y').lstrip('0') if self.date else ''
+        if self.shot_header:
+            header = self.shot_header
+        else:
+            header = DEFAULT_HEADER_BACKSIGHTS if self.backsights_enabled else DEFAULT_HEADER
+        
         lines = [
             self.cave_name,
             'SURVEY NAME: %s' % self.name,
@@ -161,18 +242,21 @@ class Survey(object):
             'SURVEY TEAM:',
             ','.join(self.team) if self.team else '',
             'DECLINATION: %7.2f  FORMAT: %s  CORRECTIONS:  %s  CORRECTIONS2:  %s' %
-                (self.declination, self.lrud_format or '',
+                (self.declination, self.file_format,
                  '%.2f %.2f %.2f' % tuple(self.corrections),
                  '%.2f %.2f' % tuple(self.corrections2)),
             '',
-            '\t'.join(self.shot_header),
+            '\t'.join(header),
             '',
         ]
         for shot in self.shots:
             vals = []
-            for k,v in shot.items():  # FIXME: this depends on OrderedDict ordering, ensure we match `shot_header`
-                if k in ('BEARING', 'INC', 'AZM2', 'INC2', 'LENGTH'):
+            for k in header:
+                v = shot.get(k, None)
+                if k in ('BEARING', 'INC', 'AZM2', 'INC2'):
                     vals.append('%7.2f' % (v if v is not None else -999.0))
+                elif k == 'LENGTH':
+                    vals.append('%8.3f' % (v if v is not None else -999.0))
                 elif k in ('LEFT', 'RIGHT', 'UP', 'DOWN'):
                     vals.append('%7.2f' % (v if v is not None and v != float('inf') else -9.90))
                 elif k in ('FROM', 'TO'):
@@ -197,12 +281,16 @@ class DatFile(object):
     """
     Representation of a Compass .DAT File. A DatFile is a container for :class:`Survey` objects.
 
-    :ivar name:    (string) the DatFile's "name", not necessarily related to its filename
-    :ivar surveys: (list of :class:`Survey`)
+    See: `Compass Survey Data File Format <http://www.fountainware.com/compass/Documents/FileFormats/SurveyDataFormat.htm>`_
+
+    :ivar name:     (string) the DatFile's "name", not necessarily related to its filename
+    :ivar filename: (string) underlying .DAT file's filename
+    :ivar surveys:  (list of :class:`Survey`)
     """
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, filename=None):
         self.name = name
+        self.filename = filename
         self.surveys = []
 
     def add_survey(self, survey):
@@ -248,24 +336,32 @@ class DatFile(object):
         """Read a .DAT file and produce a `Survey`"""
         return CompassDatParser(fname).parse()
 
-    def write(self, outf):
-        """Write a `Survey` to the specified .DAT file"""
-        with codecs.open(outf, 'wb', 'windows-1252') as outf:
+    def write(self, outfname=None):
+        """Write or overwrite a `Survey` to the specified .DAT file"""
+        outfname = outfname or self.filename
+        with codecs.open(outfname, 'wb', 'windows-1252') as outf:
             for survey in self.surveys:
                 outf.write('\r\n'.join(survey._serialize()))
                 outf.write('\r\n'+'\f'+'\r\n')  # ASCII "form feed" ^L
             outf.write('\x1A')  # ASCII "sub" ^Z marks EOF
 
 
+class UTMDatum:
+    """Enumeration of common geographic datums."""
+    NAD27 = 'North American 1927'
+    NAD83 = 'North American 1983'
+    WGS84 = 'WGS 1984'
+
+
 class UTMLocation(object):
     """Represents a UTM-based coordinate for fixed stations."""
 
-    def __init__(self, easting, northing, elevation, zone=None, convergence=None, datum=None):
-        self.easting = easting
-        self.northing = northing
-        self.elevation = elevation
-        self.zone = int(zone) if zone is not None else None
-        self.convergence = convergence
+    def __init__(self, easting, northing, elevation=0.0, zone=0, datum=None, convergence=0.0):
+        self.easting = float(easting)
+        self.northing = float(northing)
+        self.elevation = float(elevation)
+        self.zone = int(zone)
+        self.convergence = float(convergence)
         self.datum = datum
 
     @property
@@ -280,19 +376,53 @@ class Project(object):
     """
     Representation of a Compass .MAK Project file. A Project is a container for :class:`DatFile` objects.
 
-    :ivar name:         (string)
-    :ivar linked_files: (list of :class:`DatFile`)
+    See: `Compass Project File Format <http://www.fountainware.com/compass/Documents/FileFormats/ProjectFileFormat.htm>`_
+    
+    :ivar name:          (string)
+    :ivar filename:      (string)
+    :ivar base_location: (:class:`UTMLocation`)
+    :ivar linked_files:  (list of :class:`DatFile`)
+    :ivar fixed_stations: (map of :class:`DatFile` -> station -> :class:`UTMLocation`)
     """
-
-    def __init__(self, name=None, base_location=None, file_params=None):
+    
+    def __init__(self, name=None, filename=None):
         self.name = name
-        self.base_location = base_location
-        self.file_params = file_params
+        self.filename = filename
+        
         self.linked_files = []
+        self.fixed_stations = {}  # datfile -> station -> UTMLocation
+
+        self.base_location = None
+        self._utm_zone = None
+        self._utm_datum = None
+        self._utm_convergence = None
+
+        # TODO: file parameters
+        self.override_lrud = False
+        self.lrud_association = 'FROM'  # or 'TO'
+
+    def set_base_location(self, location):
+        """Configure the project's base location"""
+        self.base_location = location
+        self._utm_zone = location.zone
+        self._utm_datum = location.datum
+        self._utm_convergence = location.convergence
 
     def add_linked_file(self, datfile):
         """Add a :class:`DatFile` to :attr:`linked_files`."""
         self.linked_files.append(datfile)
+
+    def add_linked_station(self, datfile, station, location=None):
+        """Add a linked or fixed station"""
+        if datfile not in self.fixed_stations:
+            self.fixed_stations[datfile] = {station: location}
+        else:
+            self.fixed_stations[datfile][station] = location
+
+        if location and not self.base_location:
+            self._utm_zone = location.zone
+            self._utm_datum = location.datum
+            self._utm_convergence = location.convergence
 
     def __len__(self):
         return len(self.linked_files)
@@ -312,8 +442,49 @@ class Project(object):
         """Read a .MAK file and produce a `Project`"""
         return CompassProjectParser(fname).parse()
 
-    def write(self, outf):
-        raise NotImplementedError()
+    def _serialize(self):
+        lines = []
+        if self.base_location:
+            loc = self.base_location
+            lines.append('@%.3f,%.3f,%.3f,%d,%.3f;' % (loc.easting, loc.northing, loc.elevation, loc.zone, loc.convergence))
+            lines.append('&%s;' % loc.datum)
+        
+        override = 'O' if self.override_lrud else 'o'
+        association = 't' if self.lrud_association == 'FROM' else 'T'
+        lines.append('!%s%s;' % (override, association))
+
+        if self._utm_zone:
+            lines.append('$%d;' % self._utm_zone)
+        if self._utm_datum:
+            lines.append('&%s;' % self._utm_datum)
+        if self._utm_convergence:
+            lines.append('%%%.2f;' % self._utm_convergence)
+
+        for dat in self.linked_files:
+            datfname = dat.filename if type(dat) == DatFile else dat
+            if not datfname.lower().endswith('.dat'):
+                raise ValueError('Unable to locate MAK file "%s"' % dat)
+            if dat not in self.fixed_stations:
+                lines.append('#%s;' % datfname)
+            else:
+                lines.append('#%s,' % datfname)
+                for station, loc in self.fixed_stations[dat].items():
+                    if loc:
+                        lines.append('\t%s[m,%.3f,%.3f,%.3f,],' % (station, loc.easting, loc.northing, loc.elevation))
+                    else:
+                        lines.append('\t%s,' % station)
+                lines.append(';')
+        
+        return lines
+
+    def write(self, outfilename=None):
+        """Write or overwrite this .MAK file"""
+        outfilename = outfilename or self.filename
+        if not outfilename:
+            raise ValueError('Unable to write MAK file without a filename')
+        with codecs.open(outfilename, 'wb', 'windows-1252') as outf:
+            outf.write('\r\n'.join(self._serialize()))
+            #outf.write('\x1A')  # ASCII "sub" ^Z marks EOF
 
 
 
@@ -417,7 +588,7 @@ class CompassSurveyParser(object):
 
         survey = Survey(name=name, date=date, comment=comment, team=team, cave_name=cave_name,
                         shot_header=shot_header, declination=declination,
-                        lrud_format=fmt, corrections=corrections, corrections2=corrections2)
+                        file_format=fmt, corrections=corrections, corrections2=corrections2)
 
         shots = []
         shot_lines = lines
@@ -454,7 +625,7 @@ class CompassDatParser(object):
     def parse(self):
         """Parse our data file and return a :class:`DatFile` or raise :exc:`ParseException`."""
         log.debug("Parsing Compass .DAT file %s ...", self.datfilename)
-        datobj = DatFile(name_from_filename(self.datfilename))
+        datobj = DatFile(name_from_filename(self.datfilename), filename=self.datfilename)
 
         with codecs.open(self.datfilename, 'rb', 'windows-1252') as datfile:
             full_contents = datfile.read()
@@ -534,7 +705,7 @@ class CompassProjectParser(object):
 
                 elif header == '!':
                     value = value.rstrip(';')
-                    file_params = set(value.upper())
+                    #file_params = set(value)  # TODO
 
                 elif header == '#':
                     if value.endswith(';'):
@@ -543,9 +714,10 @@ class CompassProjectParser(object):
                     else:
                         prev = value
 
-            log.debug("Project:  base_loc=%s  params=%s  linked_files=%s", base_location, file_params, linked_files)
+            log.debug("Project:  base_loc=%s  linked_files=%s", base_location, linked_files)
 
-            project = Project(name_from_filename(self.makfilename), base_location, file_params)
+            project = Project(name_from_filename(self.makfilename), filename=self.makfilename)
+            project.set_base_location(base_location)
 
             for linked_file in linked_files:
                 # TODO: we need to support case-insensitive path resolution on case-sensitive filesystems

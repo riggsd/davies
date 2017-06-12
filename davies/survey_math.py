@@ -7,8 +7,26 @@ This is "slow math", operating on scalar values without vector math (no `numpy` 
 import math
 
 
-__all__ = 'hd', 'vd', 'cartesian_offset', 'angle_delta'
+__all__ = 'hd', 'vd', 'cartesian_offset', 'angle_delta', \
+          'm2ft', 'ft2m'
 
+
+#
+# Unit Conversions
+#
+
+def m2ft(m):
+    """Convert meters to feet"""
+    return m * 3.28084
+
+def ft2m(ft):
+    """Convert feet to meters"""
+    return ft * 0.3048
+
+
+#
+# Trig Routines
+#
 
 def hd(inc, sd):
     """

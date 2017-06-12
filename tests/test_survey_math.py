@@ -11,7 +11,7 @@ class MathTestCase(unittest.TestCase):
             return True
         self.assertEqual(len(first), len(second))
         for one, two in zip(first, second):
-            self.assertAlmostEquals(one, two, places, msg, delta)
+            self.assertAlmostEqual(one, two, places, msg, delta)
 
 
 class HorizontalDistanceTest(unittest.TestCase):
@@ -79,3 +79,12 @@ class CartesianOffsetTest(MathTestCase):
 
     def test9(self):
         self.assertSequenceAlmostEqual(cartesian_offset(0, 45, 100), (0, self.leg), msg='high angle north')
+
+
+class UnitConversionTest(MathTestCase):
+
+    def test_m2ft(self):
+        self.assertEqual(m2ft(100), 328.084)
+
+    def test_ft2m(self):
+        self.assertEqual(ft2m(100), 30.48)
