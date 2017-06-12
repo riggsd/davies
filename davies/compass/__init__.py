@@ -164,9 +164,23 @@ class Survey(object):
         self.passage_units = fmt[2]
         self.inclination_units = fmt[3]
         self.passage_dimension_order = list(fmt[4:8])
-        self.shot_item_order = list(fmt[8:11])
-        self.backsight = fmt[11] if len(fmt) > 11 else 'N'
-        self.lrud_association = fmt[12] if len(fmt) > 12 else 'F'
+
+        if len(fmt) < 15:
+            self.shot_item_order = list(fmt[8:11])
+        else:
+            self.shot_item_order = list(fmt[8:13])
+
+        if len(fmt) < 12:
+            self.backsight = 'N'
+        elif len(fmt) > 12:
+            self.backsight = fmt[-2]
+        else:
+            self.backsight = fmt[-1]
+
+        if len(fmt) < 13:
+            self.lrud_association = 'F'
+        else:
+            self.lrud_association = fmt[-1]
 
     def add_shot(self, shot):
         """Add a shot dictionary to :attr:`shots`, applying this survey's magnetic declination"""

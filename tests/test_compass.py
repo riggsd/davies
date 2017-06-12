@@ -151,12 +151,10 @@ class DateFormatTest(unittest.TestCase):
 
 class SurveyFileFormatTest(unittest.TestCase):
 
-    FMT = 'DMMD'+'LRUD'+'LAD'+'NF'
-
     def test_set_fmt(self):
-        s = Survey(file_format=' '*13)
-        s.file_format = self.FMT
-        
+        FMT = 'DMMD'+'LRUD'+'LAD'+'NF'
+        s = Survey(file_format=FMT)
+
         self.assertEqual(s.bearing_units, 'D')
         self.assertEqual(s.length_units, 'M')
         self.assertEqual(s.passage_units, 'M')
@@ -173,7 +171,59 @@ class SurveyFileFormatTest(unittest.TestCase):
         self.assertEqual(s.lrud_association, 'F')
 
     def test_fmt_out(self):
+        FMT = 'DMMD'+'LRUD'+'LAD'+'NF'
         s = Survey()
-        s.file_format = self.FMT
-        self.assertEqual(s.file_format, self.FMT)
+        s.file_format = FMT
+        self.assertEqual(s.file_format, FMT)
     
+    def test_fmt_11(self):
+        FMT = 'DMMD'+'LRUD'+'LAD'
+        s = Survey(file_format=FMT)
+
+        self.assertEqual(s.bearing_units, 'D')
+        self.assertEqual(s.length_units, 'M')
+        self.assertEqual(s.passage_units, 'M')
+        self.assertEqual(s.inclination_units, 'D')
+        self.assertEqual(s.passage_dimension_order, ['L','R','U','D'])
+        self.assertEqual(s.shot_item_order, ['L','A','D'])
+        #self.assertEqual(s.backsight, 'N')
+        #self.assertEqual(s.lrud_association, 'F')
+
+    def test_fmt_12(self):
+        FMT = 'DMMD'+'LRUD'+'LAD'+'F'
+        s = Survey(file_format=FMT)
+
+        self.assertEqual(s.bearing_units, 'D')
+        self.assertEqual(s.length_units, 'M')
+        self.assertEqual(s.passage_units, 'M')
+        self.assertEqual(s.inclination_units, 'D')
+        self.assertEqual(s.passage_dimension_order, ['L','R','U','D'])
+        self.assertEqual(s.shot_item_order, ['L','A','D'])
+        #self.assertEqual(s.backsight, 'N')
+        self.assertEqual(s.lrud_association, 'F')
+
+    def test_fmt_13(self):
+        FMT = 'DMMD'+'LRUD'+'LAD'+'NF'
+        s = Survey(file_format=FMT)
+
+        self.assertEqual(s.bearing_units, 'D')
+        self.assertEqual(s.length_units, 'M')
+        self.assertEqual(s.passage_units, 'M')
+        self.assertEqual(s.inclination_units, 'D')
+        self.assertEqual(s.passage_dimension_order, ['L','R','U','D'])
+        self.assertEqual(s.shot_item_order, ['L','A','D'])
+        self.assertEqual(s.backsight, 'N')
+        self.assertEqual(s.lrud_association, 'F')
+
+    def test_fmt_15(self):
+        FMT = 'DMMD'+'LRUD'+'LAaDd'+'NF'
+        s = Survey(file_format=FMT)
+
+        self.assertEqual(s.bearing_units, 'D')
+        self.assertEqual(s.length_units, 'M')
+        self.assertEqual(s.passage_units, 'M')
+        self.assertEqual(s.inclination_units, 'D')
+        self.assertEqual(s.passage_dimension_order, ['L','R','U','D'])
+        self.assertEqual(s.shot_item_order, ['L','A','a','D','d'])
+        self.assertEqual(s.backsight, 'N')
+        self.assertEqual(s.lrud_association, 'F')
