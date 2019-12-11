@@ -62,7 +62,7 @@ class Shot(OrderedDict):
         return self.get('TO', None) in (None, '')
 
     def __str__(self):
-        return ', '.join('%s=%s' % (k,v) for (k,v) in self.items())
+        return ', '.join('%s=%s' % (k,v) for (k,v) in self.items() if v is not None)
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self)
@@ -73,7 +73,8 @@ class Survey(object):
     Representation of a PocketTopo Survey object. A Survey is a container for :class:`Shot` objects.
     """
 
-    def __init__(self, name=None, date=None, comment=None, declination=0.0, cave_name=None, length_units='m', angle_units=360, shots=None):
+    def __init__(self, name=None, date=None, comment=None, declination=0.0, cave_name=None,
+                 length_units='m', angle_units=360, shots=None, rename=None):
         self.name = name
         self.date = date
         self.comment = comment
@@ -81,18 +82,41 @@ class Survey(object):
         self.cave_name = cave_name
         self.length_units = length_units
         self.angle_units = angle_units
+        self.rename = rename
 
         self.shots = []
         self.splays = defaultdict(list)
         if shots:
-            [self.add_shot(shot) for shot in shots]
+            for shot in shots:
+                self.add_shot(shot)
+
+        assert self.length_units in ('m', 'feet')
+        assert self.angle_units in (360, 400)
+        assert -90 < self.declination < 90
 
     def add_shot(self, shot):
         """Add a Shot to :attr:`shots`, applying our survey's :attr:`declination` to it."""
+        if self.rename:
+            shot = self._rename_shot(shot)
+
         shot.declination = self.declination
         if shot.is_splay:
             self.splays[shot['FROM']].append(shot)
         self.shots.append(shot)
+
+    def _rename_shot(self, shot):
+        if not self.rename:
+            return shot
+        if callable(self.rename):
+            shot['FROM'] = self.rename(shot['FROM'])
+            shot['TO'] = self.rename(shot['TO']) if 'TO' in shot else None
+        else:
+            from_srv, from_stn = shot['FROM'].split('.')
+            shot['FROM'] = '%s.%s' % (self.rename.get(from_srv, from_srv), from_stn)
+            if shot.get('TO', None):
+                to_srv, to_stn = shot['TO'].split('.')
+                shot['TO'] = '%s.%s' % (self.rename.get(to_srv, to_srv), to_stn)
+        return shot
 
     @property
     def length(self):
@@ -156,7 +180,12 @@ class MergingSurvey(Survey):
         if not self.shots or not shot.get('TO', None) or not self.shots[-1].get('TO', None):
             return super(MergingSurvey, self).add_shot(shot)
 
-        from_, to = shot['FROM'], shot['TO']
+        if self.rename:
+            renamed = self._rename_shot(shot)
+            from_, to = renamed['FROM'], renamed['TO']
+        else:
+            from_, to = shot['FROM'], shot['TO']
+
         prev_shot = self.shots[-1]
         prev_from, prev_to = prev_shot['FROM'], prev_shot['TO']
 
@@ -293,9 +322,11 @@ class TxtFile(object):
         raise KeyError(item)
 
     @staticmethod
-    def read(fname, merge_duplicate_shots=False, encoding='windows-1252'):
+    def read(fname, merge_duplicate_shots=False, encoding='windows-1252', rename=None, declination=None):
         """Read a PocketTopo .TXT file and produce a `TxtFile` object which represents it"""
-        return PocketTopoTxtParser(fname, merge_duplicate_shots, encoding).parse()
+        parser = PocketTopoTxtParser(fname, merge_duplicate_shots=merge_duplicate_shots,
+                                     encoding=encoding, rename=rename, declination=declination)
+        return parser.parse()
 
     # def write(self, outf):
     #     """Write a `Survey` to the specified .DAT file"""
@@ -307,10 +338,12 @@ class TxtFile(object):
 class PocketTopoTxtParser(object):
     """Parses the PocketTopo .TXT file format"""
 
-    def __init__(self, txtfilename, merge_duplicate_shots=False, encoding='windows-1252'):
+    def __init__(self, txtfilename, merge_duplicate_shots=False, encoding='windows-1252', rename=None, declination=None):
         self.txtfilename = txtfilename
         self.merge_duplicate_shots = merge_duplicate_shots
         self.encoding = encoding
+        self.rename = rename
+        self.declination = declination
 
     def parse(self):
         """Produce a `TxtFile` object from the .TXT file"""
@@ -318,11 +351,15 @@ class PocketTopoTxtParser(object):
         SurveyClass = MergingSurvey if self.merge_duplicate_shots else Survey
         txtobj = None
 
+        with open(self.txtfilename, 'rb') as infile:
+            if infile.read(3) == b'Top':
+                raise IOError('PocketTopo binary .top files are not supported, only .txt exports!')
+
         with codecs.open(self.txtfilename, 'rb', self.encoding) as txtfile:
             lines = txtfile.read().splitlines()
 
             # first line is cave name and units
-            first_line_re = re.compile(r'^([\w\s]*)\(([\w\s]*),([\w\s]*)')
+            first_line_re = re.compile(r'^([\w\s\.]*)\(([\w\s]*),([\w\s]*)')
             first_line = lines.pop(0)
             cave_name, length_units, angle_units = first_line_re.search(first_line).groups()
             cave_name, angle_units = cave_name.strip(), int(angle_units)
@@ -337,9 +374,9 @@ class PocketTopoTxtParser(object):
                 id, date, declination = toks[:3]
                 id = id.strip('[]:')
                 date = datetime.strptime(date, '%Y/%m/%d').date()
-                declination = float(declination)
+                declination = self.declination if self.declination is not None else float(declination)
                 comment = toks[3].strip('"') if len(toks) == 4 else ''
-                survey = SurveyClass(id, date, comment, declination, cave_name)
+                survey = SurveyClass(id, date, comment, declination, cave_name, rename=self.rename)
                 txtobj.add_survey(survey)
 
             while not lines[0]:

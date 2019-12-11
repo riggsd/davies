@@ -6,30 +6,36 @@ the differences in each format, so we must carefully convert from one shot forma
 well has "hack" a few nuances.
 
 
-usage: pockettopo2compass.py [-h] [--no-splays] [--lrud] TXTFILE [TXTFILE...]
+usage: pockettopo2compass.py [-h] [--no-splays] [--lrud] TXTFILE...
 
 Create Compass .DAT files from PocketTopo .TXT export files.
 
 positional arguments:
-  FNAME        One or more PocketTopo .TXT export files
+  TXTFILE...   One or more PocketTopo .TXT export files
 
 optional arguments:
   -h, --help   show this help message and exit
   --no-splays  Exclude splay shots from output
   --lrud       Calculate LRUD values from splay shots
+  --date DATE        Survey date (YYYY-MM-DD)
+  --team TEAM        Survey team
+  --comment COMMENT  Additional comment
 """
 
 import sys
 import os, os.path
 import logging
-import random
+from datetime import datetime
+from collections import Counter
 
 from davies import compass
 from davies import pockettopo
-from davies.survey_math import hd, vd, angle_delta, cartesian_offset, m2f
+from davies.survey_math import hd, vd, angle_delta, m2ft
 
 
 LRUD_DELTA = 60  # cone theta within which a splay will be considered a potential LRUD
+
+_splay_counts = Counter()  # used for naming anonymous splay shots
 
 
 def find_candidate_splays(splays, azm, inc, delta=LRUD_DELTA):
@@ -51,12 +57,19 @@ def find_candidate_vert_splays(splays, inc, delta=LRUD_DELTA):
         return [splay for splay in splays if splay['INC'] <= -30]
 
 
-def shot2shot(insurvey, inshot, calculate_lrud=True):
+def shot2shot(insurvey, inshot, calculate_lrud=True, hide_splays=True):
     """Convert a PocketTopo `Shot` to a Compass `Shot`"""
-    # FIXME: requires angles in degrees only, no grads
+    if insurvey.angle_units != 360:
+        raise RuntimeError('Only angles in degrees are supported at this time!')  # FIXME
+
+    # Compass 'L' flag excludes splays from cave length, 'P' from plotting
+    if hide_splays:
+        splay_flags = (compass.Exclude.LENGTH, compass.Exclude.PLOT)
+    else:
+        splay_flags = (compass.Exclude.LENGTH,)
 
     splays = insurvey.splays[inshot['FROM']]
-    if calculate_lrud and not inshot.is_splay and splays:
+    if calculate_lrud and not (inshot.is_splay and splays):
         # Try our best to convert PocketTopo splay shots into LRUDs
         print '\n\n' 'sta %s has %d splays' % (inshot['FROM'], len(splays))
 
@@ -103,32 +116,46 @@ def shot2shot(insurvey, inshot, calculate_lrud=True):
     else:
         up, down, left, right = None, None, None, None
 
+    if inshot['TO']:
+        to = inshot['TO']
+    else:
+        # Compass requires a named TO station, so we must invent one for splays
+        _splay_counts[inshot['FROM']] += 1
+        to = '%s.s%03d' % (inshot['FROM'], _splay_counts[inshot['FROM']])
+
+    # all Compass length values must be in feet
+    transform = m2ft if insurvey.length_units == 'm' else lambda ft: ft
+
     return compass.Shot([
         ('FROM', inshot['FROM']),
-        # Compass requires a named TO station, so we must invent one for splays
-        ('TO', inshot['TO'] or '%s.s%03d' % (inshot['FROM'], random.randint(0,1000))),
-        ('LENGTH', m2ft(inshot.length)),
+        ('TO', to),
+        ('LENGTH', transform(inshot.length)),
         # BEARING/AZM named inconsistently in Davies to reflect each program's arbitrary name. We
         # can't use `inshot.azm` here because we need the "raw" compass value without declination
         ('BEARING', inshot['AZM']),
         ('INC', inshot.inc),
-        ('LEFT', m2ft(left) if left is not None else -9.90),
-        ('UP', m2ft(up) if left is not None else -9.90),
-        ('DOWN', m2ft(down) if left is not None else -9.90),
-        ('RIGHT', m2ft(right) if left is not None else -9.90),  # Compass requires this order!
-        # Compass 'L' flag excludes splays from cave length calculation
-        ('FLAGS', (compass.Exclude.LENGTH, compass.Exclude.PLOT) if inshot.is_splay else ()),
+        ('LEFT', transform(left) if left is not None else -9.90),
+        ('UP', transform(up) if left is not None else -9.90),
+        ('DOWN', transform(down) if left is not None else -9.90),
+        ('RIGHT', transform(right) if left is not None else -9.90),  # Compass requires this order!
+        ('FLAGS', splay_flags if inshot.is_splay else ()),
         # COMMENTS/COMMENT named inconsistently in Davies to reflect each program's arbitrary name
         ('COMMENTS', inshot['COMMENT'])
     ])
 
 
-def pockettopo2compass(txtfilename, exclude_splays=False, calculate_lrud=False):
+# Mapping of survey designations to rename
+SURVEY_RENAME = {'8': '80'}  # FIXME
+
+
+def pockettopo2compass(txtfilename,
+                       exclude_splays=False, calculate_lrud=False, hide_splays=True,
+                       date=None, team=None, comment=None, declination=None):
     """Main function which converts a PocketTopo .TXT file to a Compass .DAT file"""
     print 'Converting PocketTopo data file %s ...' % txtfilename
 
     # Read our PocketTopo .TXT file, averaging triple-shots in the process
-    infile = pockettopo.TxtFile.read(txtfilename, merge_duplicate_shots=True)
+    infile = pockettopo.TxtFile.read(txtfilename, merge_duplicate_shots=True, rename=SURVEY_RENAME, declination=declination)
 
     cave_name = os.path.basename(txtfilename).rsplit('.', 1)[0].replace('_', ' ')
     outfilename = txtfilename.rsplit('.', 1)[0] + '.DAT'
@@ -138,8 +165,10 @@ def pockettopo2compass(txtfilename, exclude_splays=False, calculate_lrud=False):
 
     for insurvey in infile:
         # Our Compass and PocketTopo Surveys are very similar...
+        survey_date = datetime.strptime(date, '%Y-%m-%d').date() if date else insurvey.date
         outsurvey = compass.Survey(
-            insurvey.name, insurvey.date, comment=insurvey.comment, cave_name=cave_name, declination=insurvey.declination
+            insurvey.name, survey_date, comment=comment or insurvey.comment,
+            cave_name=cave_name, declination=insurvey.declination, team=team
         )
         outsurvey.length_units = 'M'
         outsurvey.passage_units = 'M'
@@ -149,7 +178,7 @@ def pockettopo2compass(txtfilename, exclude_splays=False, calculate_lrud=False):
                 continue  # skip
 
             # ...but the Shot data fields require some tweaking, see `shot2shot()` for details
-            outshot = shot2shot(insurvey, inshot, calculate_lrud)
+            outshot = shot2shot(insurvey, inshot, calculate_lrud=calculate_lrud, hide_splays=hide_splays)
             outsurvey.add_shot(outshot)
 
         outfile.add_survey(outsurvey)
@@ -171,8 +200,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Create Compass .DAT files from PocketTopo .TXT export files.')
     parser.add_argument('filenames', metavar='FNAME', nargs='+', help='One or more PocketTopo .TXT export files')
     parser.add_argument('--no-splays', dest='exclude_splays', action='store_true', help='Exclude splay shots from output')
+    parser.add_argument('--hide-splays', dest='hide_splays', action='store_true', help='Make spay shots "hidden"')
     parser.add_argument('--lrud', dest='calculate_lrud', action='store_true', help='Calculate LRUD values from splay shots')
+    parser.add_argument('--date', dest='date', help='Survey date (YYYY-MM-DD)')
+    parser.add_argument('--team', dest='team', help='Survey team')
+    parser.add_argument('--comment', dest='comment', help='Additional comment')
+    parser.add_argument('--declination', dest='declination', type=float,    help='Magnetic declination correction')
     args = parser.parse_args()
 
     for txtfilename in args.filenames:
-        pockettopo2compass(txtfilename, args.exclude_splays, args.calculate_lrud)
+        pockettopo2compass(txtfilename,
+                           args.exclude_splays, args.calculate_lrud, hide_splays=args.hide_splays,
+                           date=args.date, team=args.team, comment=args.comment, declination=args.declination)
