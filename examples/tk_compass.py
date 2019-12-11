@@ -104,7 +104,7 @@ class OffsetShotEditor(ttk.Frame):
         offset_keys = 'LENGTH', 'BEARING', 'INC'
         prev_station = None
         ro = 0  # row offset
-        for i, shot in enumerate(shots[:2*OffsetShotEditor.NUM_SHOTS+1/2]):
+        for i, shot in enumerate(shots[:2*OffsetShotEditor.NUM_SHOTS+1//2]):
             #print shot
             if prev_station and shot['FROM'] != prev_station:
                 ro += 1

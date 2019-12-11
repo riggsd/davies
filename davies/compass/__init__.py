@@ -15,6 +15,13 @@ __all__ = 'Project', 'UTMLocation', 'UTMDatum', \
           'CompassProjectParser', 'CompassDatParser', 'ParseException'
 
 
+# python 2/3 compatibility
+try:
+    basestring
+except:
+    basestring = str
+
+
 # Compass OO Model
 
 
@@ -130,7 +137,7 @@ class Survey(object):
         self.name = name
         self.date = date
         self.comment = comment
-        self.team = team
+        self.team = [str.strip() for str in team.split(',')] if isinstance(team, basestring) else team
         self.declination = declination
         self.corrections, self.corrections2 = corrections, corrections2  # TODO: instrument corrections not supported
         self.cave_name = cave_name
@@ -240,7 +247,7 @@ class Survey(object):
             'SURVEY NAME: %s' % self.name,
             'SURVEY DATE: %s  COMMENT:%s' % (date, self.comment),
             'SURVEY TEAM:',
-            ','.join(self.team) if self.team else '',
+            ', '.join(self.team) if self.team else '',
             'DECLINATION: %7.2f  FORMAT: %s  CORRECTIONS:  %s  CORRECTIONS2:  %s' %
                 (self.declination, self.file_format,
                  '%.2f %.2f %.2f' % tuple(self.corrections),
@@ -403,6 +410,8 @@ class Project(object):
 
     def set_base_location(self, location):
         """Configure the project's base location"""
+        if not location:
+            return
         self.base_location = location
         self._utm_zone = location.zone
         self._utm_datum = location.datum
